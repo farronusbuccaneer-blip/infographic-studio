@@ -830,9 +830,10 @@ textarea#xml-input:focus {
     position: sticky !important;
     top: 0 !important;
     z-index: 10000 !important;
-    padding: 0 12px;
+    padding: 0 8px !important;
     height: 56px;
     box-shadow: var(--shadow-md);
+    gap: 8px;
   }
 
   .logo-text {
@@ -843,6 +844,25 @@ textarea#xml-input:focus {
     width: 28px;
     height: 28px;
     font-size: 14px;
+  }
+
+  /* Header Controls compact for mobile screen sizes */
+  .header-controls {
+    gap: 6px !important;
+  }
+
+  header .btn {
+    padding: 8px !important;
+    min-width: 36px;
+    height: 36px;
+  }
+
+  header .btn span {
+    display: none !important; /* Hide button text to prevent clipping */
+  }
+
+  header .btn i {
+    margin: 0 !important;
   }
 
   main {
@@ -866,7 +886,7 @@ textarea#xml-input:focus {
     border-bottom: 1px solid var(--border-color);
   }
 
-  /* 2. Text Editor */
+  /* 2. Text Editor & Collapsible functionality */
   .editor-sidebar {
     position: static !important;
     width: 100% !important;
@@ -879,7 +899,11 @@ textarea#xml-input:focus {
     border: none !important;
     display: flex !important;
     flex-direction: column !important;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
+  }
+
+  .editor-sidebar.collapsed > *:not(.editor-section-header) {
+    display: none !important;
   }
 
   .textarea-container {
@@ -925,7 +949,7 @@ textarea#xml-input:focus {
     overflow: visible !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 30px !important;
+    gap: 20px !important;
   }
 
   /* Force templates and overlays panes to both be visible and stack vertically */
@@ -934,6 +958,30 @@ textarea#xml-input:focus {
     flex-direction: column !important;
     height: auto !important;
     gap: 12px !important;
+  }
+
+  /* Reorder headers to the top in tab panes */
+  #pane-templates .editor-section-header,
+  #pane-overlays .editor-section-header {
+    order: -1;
+    cursor: pointer;
+  }
+
+  #pane-templates.collapsed > *:not(.editor-section-header) {
+    display: none !important;
+  }
+
+  #pane-overlays.collapsed > *:not(.editor-section-header) {
+    display: none !important;
+  }
+
+  /* Chevron indicator rotation transition */
+  .toggle-chevron {
+    transition: transform 0.25s ease;
+  }
+
+  .collapsed .toggle-chevron {
+    transform: rotate(180deg);
   }
 
   .canvas-hint {

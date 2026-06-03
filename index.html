@@ -90,7 +90,8 @@
     <section class="editor-sidebar">
       <div class="editor-section-header">
         <span><i class="fa-solid fa-code"></i> テキストコードエディタ</span>
-        <button id="btn-reset-text" class="shortcut-btn" title="デフォルト文面に戻す"><i class="fa-solid fa-rotate-left"></i></button>
+        <i class="fa-solid fa-chevron-up toggle-chevron mobile-only" style="margin-left: auto;"></i>
+        <button id="btn-reset-text" class="shortcut-btn" title="デフォルト文面に戻す" style="margin-left: 10px;"><i class="fa-solid fa-rotate-left"></i></button>
       </div>
 
       <!-- Quick Tag Insert Tools -->
@@ -143,8 +144,9 @@
           </label>
           
           <!-- Template List -->
-          <div class="editor-section-header" style="padding: 8px 0; border-top: 1px solid var(--border-color); border-bottom: none;">
+          <div class="editor-section-header">
             <span>マイテンプレート</span>
+            <i class="fa-solid fa-chevron-up toggle-chevron mobile-only" style="margin-left: auto;"></i>
           </div>
           <div class="assets-grid" id="templates-grid">
             <!-- Programmatically populated -->
@@ -162,8 +164,9 @@
           </label>
           
           <!-- Overlays List -->
-          <div class="editor-section-header" style="padding: 8px 0; border-top: 1px solid var(--border-color); border-bottom: none;">
+          <div class="editor-section-header">
             <span>マイスタンプ・アイコン</span>
+            <i class="fa-solid fa-chevron-up toggle-chevron mobile-only" style="margin-left: auto;"></i>
           </div>
           <div class="assets-grid" id="overlays-grid">
             <!-- Programmatically populated -->

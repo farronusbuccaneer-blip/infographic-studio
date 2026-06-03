@@ -558,60 +558,78 @@ function downloadGraphic() {
   
   showToast('画像を出力中...', 'warning');
 
-  // Grab the hidden base canvas containing template and text drawn at high-res
-  const hiddenCanvas = document.getElementById('hidden-base-canvas');
-  const exportCanvas = document.createElement('canvas');
-  exportCanvas.width = originalWidth;
-  exportCanvas.height = originalHeight;
-  const ctx = exportCanvas.getContext('2d');
+  try {
+    // Grab the hidden base canvas containing template and text drawn at high-res
+    const hiddenCanvas = document.getElementById('hidden-base-canvas');
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = originalWidth;
+    exportCanvas.height = originalHeight;
+    const ctx = exportCanvas.getContext('2d');
 
-  // Draw background image and text layer first
-  ctx.drawImage(hiddenCanvas, 0, 0);
+    // Draw background image and text layer first
+    ctx.drawImage(hiddenCanvas, 0, 0);
 
-  // Parse Fabric overlays and overlay them onto high-res export context
-  const overlays = canvas.getObjects();
-  
-  overlays.forEach(overlay => {
-    if (overlay.name === 'title' || overlay.name?.startsWith('section')) return;
-    if (!overlay._element) return;
-
-    ctx.save();
+    // Parse Fabric overlays and overlay them onto high-res export context
+    const overlays = canvas.getObjects();
     
-    const center = overlay.getCenterPoint();
-    ctx.translate(center.x, center.y);
-    ctx.rotate((overlay.angle || 0) * Math.PI / 180);
+    overlays.forEach(overlay => {
+      if (overlay.name === 'title' || overlay.name?.startsWith('section')) return;
+      if (!overlay._element) return;
 
-    const flipX = overlay.flipX ? -1 : 1;
-    const flipY = overlay.flipY ? -1 : 1;
-    ctx.scale(flipX, flipY);
+      ctx.save();
+      
+      const center = overlay.getCenterPoint();
+      ctx.translate(center.x, center.y);
+      ctx.rotate((overlay.angle || 0) * Math.PI / 180);
 
-    const w = overlay.width * overlay.scaleX * flipX;
-    const h = overlay.height * overlay.scaleY * flipY;
+      const flipX = overlay.flipX ? -1 : 1;
+      const flipY = overlay.flipY ? -1 : 1;
+      ctx.scale(flipX, flipY);
 
-    ctx.globalAlpha = overlay.opacity ?? 1;
-    ctx.drawImage(overlay._element, -Math.abs(w) / 2, -Math.abs(h) / 2, Math.abs(w), Math.abs(h));
-    
-    ctx.restore();
-  });
+      const w = overlay.width * overlay.scaleX * flipX;
+      const h = overlay.height * overlay.scaleY * flipY;
 
-  const dataUrl = exportCanvas.toDataURL('image/png');
+      ctx.globalAlpha = overlay.opacity ?? 1;
+      ctx.drawImage(overlay._element, -Math.abs(w) / 2, -Math.abs(h) / 2, Math.abs(w), Math.abs(h));
+      
+      ctx.restore();
+    });
 
-  if (window.innerWidth <= 768) {
-    // Mobile/Tablet download popup modal (requires long press to save)
-    const modal = document.getElementById('mobile-download-modal');
-    const modalImg = document.getElementById('mobile-download-img');
-    modalImg.src = dataUrl;
-    modal.style.display = 'flex';
-    showToast('画像を生成しました。長押しして保存してください。', 'warning');
-  } else {
-    // Desktop download logic via dynamic link click
-    const link = document.createElement('a');
-    link.download = `infographic_${Date.now()}.png`;
-    link.href = dataUrl;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast('図解画像のダウンロードが完了しました！');
+    const dataUrl = exportCanvas.toDataURL('image/png');
+
+    if (window.innerWidth <= 768) {
+      // Mobile/Tablet download popup modal (requires long press to save)
+      const modal = document.getElementById('mobile-download-modal');
+      const modalImg = document.getElementById('mobile-download-img');
+      modalImg.src = dataUrl;
+      modal.style.display = 'flex';
+      showToast('画像を生成しました。長押しして保存してください。', 'warning');
+
+      // Attempt direct download parallelly (some mobile browsers support it)
+      try {
+        const link = document.createElement('a');
+        link.download = `infographic_${Date.now()}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (directDlErr) {
+        console.warn('Direct download attempt failed on mobile:', directDlErr);
+      }
+    } else {
+      // Desktop download logic via dynamic link click
+      const link = document.createElement('a');
+      link.download = `infographic_${Date.now()}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('図解画像のダウンロードが完了しました！');
+    }
+  } catch (err) {
+    console.error('Download graphic processing failed:', err);
+    alert('画像の保存に失敗しました:\n' + err.message);
+    showToast('エラーが発生しました: ' + err.message, 'danger');
   }
 }
 
@@ -978,6 +996,46 @@ function initMobileNavigation() {
 }
 
 /**
+ * Initialize Collapsible accordion sections for mobile view (under 768px)
+ */
+function initCollapsibleSections() {
+  const leftSidebar = document.querySelector('.editor-sidebar');
+  const paneTemplates = document.getElementById('pane-templates');
+  const paneOverlays = document.getElementById('pane-overlays');
+
+  const toggleSection = (element) => {
+    if (window.innerWidth <= 768) {
+      element.classList.toggle('collapsed');
+      // Re-fit canvas dynamically based on viewport height updates after collapse toggle
+      fitCanvasToWorkspace();
+    }
+  };
+
+  // Bind click events to headers
+  const leftHeader = leftSidebar.querySelector('.editor-section-header');
+  if (leftHeader) {
+    leftHeader.onclick = () => toggleSection(leftSidebar);
+  }
+
+  const templatesHeader = paneTemplates.querySelector('.editor-section-header');
+  if (templatesHeader) {
+    templatesHeader.onclick = () => toggleSection(paneTemplates);
+  }
+
+  const overlaysHeader = paneOverlays.querySelector('.editor-section-header');
+  if (overlaysHeader) {
+    overlaysHeader.onclick = () => toggleSection(paneOverlays);
+  }
+
+  // Setup initial load collapsed states for mobile
+  if (window.innerWidth <= 768) {
+    leftSidebar.classList.add('collapsed');
+    paneTemplates.classList.add('collapsed');
+    paneOverlays.classList.add('collapsed');
+  }
+}
+
+/**
  * Main Application Bootstrap
  */
 window.onload = async () => {
@@ -997,6 +1055,7 @@ window.onload = async () => {
       initFileUploads();
       initXmlEditorShortcuts();
       initMobileNavigation();
+      initCollapsibleSections();
 
       // 5. Load default starter data
       xmlInput.value = DEFAULT_XML_TEXT;
