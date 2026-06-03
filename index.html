@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InfoGraphic Generator Studio</title>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="XML風タグによるテキスト解析と透過PNG配置を組み合わせた、ブラウザ完結の図解画像生成ツール。SNSやブログ用の定型図解を高速に作成。">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  
+  <!-- Libraries (Dexie.js and Fabric.js) -->
+  <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+</head>
+<body>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading InfoGraphic Studio...</div>
+  </div>
+
+  <!-- Coordinate Editor Warning/Action Bar -->
+  <div id="config-editor-bar" class="config-editor-bar">
+    <div class="config-editor-info">
+      <i class="fa-solid fa-circle-info fa-beat"></i>
+      <span><strong>レイアウト編集モード:</strong> キャンバス上のボックスをドラッグ・変形して、テキストの描画エリアを調整してください。</span>
+    </div>
+    <div class="config-editor-actions">
+      <button id="btn-save-coords" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> 変更を保存</button>
+      <button id="btn-cancel-coords" class="btn btn-danger"><i class="fa-solid fa-xmark"></i> キャンセル</button>
+    </div>
+  </div>
+
+  <!-- Header / Navbar -->
+  <header>
+    <div class="logo-container">
+      <div class="logo-icon"><i class="fa-solid fa-shapes"></i></div>
+      <div class="logo-text">InfoGraphic Studio</div>
+    </div>
+    
+    <!-- Canvas Navigation & Editor Toggles -->
+    <div class="header-controls">
+      <!-- Mobile Sidebar Toggles -->
+      <button id="btn-toggle-editor" class="btn btn-icon mobile-only" title="エディタを開く/閉じる">
+        <i class="fa-solid fa-code"></i>
+      </button>
+      <button id="btn-toggle-assets" class="btn btn-icon mobile-only" title="ライブラリを開く/閉じる">
+        <i class="fa-solid fa-folder-open"></i>
+      </button>
+
+      <!-- Zoom Controllers -->
+      <div class="zoom-controls">
+        <button id="btn-zoom-out" class="zoom-btn" title="ズームアウト"><i class="fa-solid fa-minus"></i></button>
+        <span id="zoom-label" class="zoom-label">100%</span>
+        <button id="btn-zoom-in" class="zoom-btn" title="ズームイン"><i class="fa-solid fa-plus"></i></button>
+        <button id="btn-zoom-fit" class="zoom-btn" title="画面に合わせる"><i class="fa-solid fa-maximize"></i></button>
+      </div>
+
+      <!-- Theme Switcher -->
+      <button id="btn-toggle-theme" class="btn btn-icon" title="ダーク/ライトモード切替">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+
+      <!-- Edit Coordinates Toggle -->
+      <button id="btn-toggle-edit-mode" class="btn" title="テキストのバウンディングボックス位置を調整">
+        <i class="fa-solid fa-crop-simple"></i> レイアウト調整
+      </button>
+
+      <!-- Clear Canvas Elements -->
+      <button id="btn-clear-canvas" class="btn btn-danger" title="キャンバスの透過画像をクリア">
+        <i class="fa-solid fa-trash-can"></i> クリア
+      </button>
+
+      <!-- Download Button -->
+      <button id="btn-download" class="btn btn-primary">
+        <i class="fa-solid fa-download"></i> 高解像度ダウンロード
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Split Layout -->
+  <main>
+    <!-- 1. Text Editor Sidebar (Left) -->
+    <section class="editor-sidebar">
+      <div class="editor-section-header">
+        <span><i class="fa-solid fa-code"></i> テキストコードエディタ</span>
+        <button id="btn-reset-text" class="shortcut-btn" title="デフォルト文面に戻す"><i class="fa-solid fa-rotate-left"></i></button>
+      </div>
+
+      <!-- Quick Tag Insert Tools -->
+      <div class="xml-shortcuts">
+        <button class="shortcut-btn" data-tag="title" title="タイトルタグの挿入">&lt;title&gt;</button>
+        <button class="shortcut-btn" data-tag="section" title="セクションタグの挿入">&lt;section1&gt;</button>
+        <button class="shortcut-btn" data-tag="row1" title="Row 1 (大見出し)">&lt;row1&gt;</button>
+        <button class="shortcut-btn" data-tag="row2" title="Row 2 (説明文)">&lt;row2&gt;</button>
+        <button class="shortcut-btn" data-tag="row3" title="Row 3 (補足文)">&lt;row3&gt;</button>
+        <button id="btn-clear-text" class="shortcut-btn" style="background: rgba(239,68,68,0.1); color: var(--danger-color); border-color: rgba(239,68,68,0.2);" title="エディタをクリア"><i class="fa-solid fa-eraser"></i> クリア</button>
+      </div>
+
+      <!-- Textarea Container -->
+      <div class="textarea-container">
+        <textarea id="xml-input" placeholder="ここにXMLタグを入力してください..." spellcheck="false"></textarea>
+      </div>
+    </section>
+
+    <!-- 2. Interactive Canvas Workspace (Center) -->
+    <section id="workspace" class="workspace">
+      <div class="canvas-container-outer">
+        <!-- Fabric.js active canvas -->
+        <canvas id="canvas"></canvas>
+      </div>
+      
+      <!-- Interactive Helper Tips -->
+      <div class="canvas-hint">
+        <span id="hint-text"><i class="fa-solid fa-circle-question"></i> 画像を選択してキャンバスに追加。ドラッグで移動、角ハンドルで縮尺/回転、[Delete]キーで削除。</span>
+      </div>
+    </section>
+
+    <!-- 3. Assets Library Sidebar (Right) -->
+    <section class="assets-sidebar">
+      <!-- Tabs -->
+      <div class="tabs-header">
+        <button id="tab-templates" class="tab-btn active"><i class="fa-solid fa-image"></i> 背景</button>
+        <button id="tab-overlays" class="tab-btn"><i class="fa-solid fa-face-smile"></i> 装飾PNG</button>
+      </div>
+
+      <!-- Tab Panes Content -->
+      <div class="tabs-content">
+        <!-- Background Templates Panel -->
+        <div id="pane-templates" class="tab-pane active">
+          <!-- Upload Background -->
+          <label class="upload-zone" id="upload-template-zone">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <strong>背景画像のアップロード</strong>
+            <span>JPG / PNG (クリックまたはドロップ)</span>
+            <input type="file" id="input-upload-template" accept="image/jpeg, image/png">
+          </label>
+          
+          <!-- Template List -->
+          <div class="editor-section-header" style="padding: 8px 0; border-top: 1px solid var(--border-color); border-bottom: none;">
+            <span>マイテンプレート</span>
+          </div>
+          <div class="assets-grid" id="templates-grid">
+            <!-- Programmatically populated -->
+          </div>
+        </div>
+
+        <!-- Overlays Panel -->
+        <div id="pane-overlays" class="tab-pane">
+          <!-- Upload Overlay PNG -->
+          <label class="upload-zone" id="upload-overlay-zone">
+            <i class="fa-solid fa-icons"></i>
+            <strong>透過PNGのアップロード</strong>
+            <span>透過PNG画像 (クリックまたはドロップ)</span>
+            <input type="file" id="input-upload-overlay" accept="image/png">
+          </label>
+          
+          <!-- Overlays List -->
+          <div class="editor-section-header" style="padding: 8px 0; border-top: 1px solid var(--border-color); border-bottom: none;">
+            <span>マイスタンプ・アイコン</span>
+          </div>
+          <div class="assets-grid" id="overlays-grid">
+            <!-- Programmatically populated -->
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Float Toast Notifications -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Hidden Base Canvas for high-res drawing -->
+  <canvas id="hidden-base-canvas" style="display: none;"></canvas>
+
+  <!-- Code Scripts -->
+  <script src="js/db.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/text-engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
