@@ -467,6 +467,16 @@ function downloadGraphic() {
 
     const dataUrl = exportCanvas.toDataURL('image/png');
 
+    // Generate clean filename based on <title> tag text
+    const parsedText = parseXMLText(xmlInput.value);
+    let cleanTitle = (parsedText.title || '')
+      .replace(/<[^>]*>/g, '')         // Remove HTML/XML tags like <red> or <emp>
+      .replace(/[\r\n]+/g, ' ')        // Remove newlines
+      .replace(/[\\/:*?"<>|]/g, '')    // Remove invalid filename characters
+      .replace(/\s+/g, '_')            // Replace spaces with underscores
+      .trim();
+    const filename = cleanTitle ? `${cleanTitle}.png` : `infographic_${Date.now()}.png`;
+
     if (window.innerWidth <= 768) {
       // Mobile/Tablet download popup modal (requires long press to save)
       const modal = document.getElementById('mobile-download-modal');
@@ -478,7 +488,7 @@ function downloadGraphic() {
       // Attempt direct download parallelly (some mobile browsers support it)
       try {
         const link = document.createElement('a');
-        link.download = `infographic_${Date.now()}.png`;
+        link.download = filename;
         link.href = dataUrl;
         document.body.appendChild(link);
         link.click();
@@ -489,7 +499,7 @@ function downloadGraphic() {
     } else {
       // Desktop download logic via dynamic link click
       const link = document.createElement('a');
-      link.download = `infographic_${Date.now()}.png`;
+      link.download = filename;
       link.href = dataUrl;
       document.body.appendChild(link);
       link.click();
