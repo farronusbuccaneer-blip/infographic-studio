@@ -219,30 +219,43 @@ function triggerRenderDebounced() {
  * Zoom and Pan handlers
  */
 function applyZoom() {
+  const scaledW = originalWidth * zoomRatio;
+  const scaledH = originalHeight * zoomRatio;
+
   canvas.setDimensions({
-    width: originalWidth * zoomRatio,
-    height: originalHeight * zoomRatio
+    width: scaledW,
+    height: scaledH
   });
   canvas.setZoom(zoomRatio);
+
+  // Sync outer container size to avoid flex stretching or clipping layout bugs
+  const outerContainer = document.querySelector('.canvas-container-outer');
+  if (outerContainer) {
+    outerContainer.style.width = `${scaledW}px`;
+    outerContainer.style.height = `${scaledH}px`;
+  }
+
   document.getElementById('zoom-label').innerText = `${Math.round(zoomRatio * 100)}%`;
 }
 
 function fitCanvasToWorkspace() {
   const padding = window.innerWidth <= 768 ? 24 : 80;
-  const workW = workspaceEl.clientWidth - padding;
   
   if (window.innerWidth <= 768) {
-    // Width-based zoom ratio
-    const zoomX = workW / originalWidth;
+    // Width-based zoom ratio using viewport physical width
+    // Subtract safe side paddings (24px total)
+    const screenW = window.innerWidth - padding;
+    const zoomX = screenW / originalWidth;
     
     // Height-based zoom ratio (limit viewport height based on window.innerHeight)
-    // Subtract header height (56px) and vertical spacing (32px)
+    // Subtract header height (56px) and safe vertical padding (32px)
     const maxVisibleH = window.innerHeight - 56 - 32;
     const zoomY = maxVisibleH / originalHeight;
     
     // Fit canvas cleanly within both width and height boundaries
     zoomRatio = Math.min(zoomX, zoomY, 1.1);
   } else {
+    const workW = workspaceEl.clientWidth - padding;
     const workH = workspaceEl.clientHeight - padding;
     const zoomX = workW / originalWidth;
     const zoomY = workH / originalHeight;
