@@ -7,7 +7,6 @@ let canvas;
 let activeTemplate = null;
 let activeCoords = null;
 let zoomRatio = 1.0;
-let isEditCoordsMode = false;
 let originalWidth = 1200;
 let originalHeight = 1600;
 let textRenderDebounceTimer = null;
@@ -19,20 +18,16 @@ const xmlInput = document.getElementById('xml-input');
 const templatesGrid = document.getElementById('templates-grid');
 const overlaysGrid = document.getElementById('overlays-grid');
 const toastContainer = document.getElementById('toast-container');
-const configEditorBar = document.getElementById('config-editor-bar');
 
 // Buttons
 const btnZoomIn = document.getElementById('btn-zoom-in');
 const btnZoomOut = document.getElementById('btn-zoom-out');
 const btnZoomFit = document.getElementById('btn-zoom-fit');
 const btnToggleTheme = document.getElementById('btn-toggle-theme');
-const btnToggleEditMode = document.getElementById('btn-toggle-edit-mode');
 const btnClearCanvas = document.getElementById('btn-clear-canvas');
 const btnDownload = document.getElementById('btn-download');
 const btnResetText = document.getElementById('btn-reset-text');
 const btnClearText = document.getElementById('btn-clear-text');
-const btnSaveCoords = document.getElementById('btn-save-coords');
-const btnCancelCoords = document.getElementById('btn-cancel-coords');
 
 // File Upload inputs
 const inputUploadTemplate = document.getElementById('input-upload-template');
@@ -232,7 +227,6 @@ function renderCanvasBackground() {
  * Debounced trigger for text inputs
  */
 function triggerRenderDebounced() {
-  if (isEditCoordsMode) return; // Freeze dynamic background rendering in layout edit mode
   clearTimeout(textRenderDebounceTimer);
   textRenderDebounceTimer = setTimeout(renderCanvasBackground, 40);
 }
@@ -254,8 +248,16 @@ function fitCanvasToWorkspace() {
   const workW = workspaceEl.clientWidth - padding;
   
   if (window.innerWidth <= 768) {
-    // On mobile, only scale by width since height is scrollable and dynamic
-    zoomRatio = Math.min(workW / originalWidth, 1.1);
+    // Width-based zoom ratio
+    const zoomX = workW / originalWidth;
+    
+    // Height-based zoom ratio (limit viewport height based on window.innerHeight)
+    // Subtract header height (56px) and vertical spacing (32px)
+    const maxVisibleH = window.innerHeight - 56 - 32;
+    const zoomY = maxVisibleH / originalHeight;
+    
+    // Fit canvas cleanly within both width and height boundaries
+    zoomRatio = Math.min(zoomX, zoomY, 1.1);
   } else {
     const workH = workspaceEl.clientHeight - padding;
     const zoomX = workW / originalWidth;
@@ -400,10 +402,6 @@ async function loadOverlaysGrid() {
  * Add Stamp Overlay Image to Canvas
  */
 function addOverlayToCanvas(dataUrl) {
-  if (isEditCoordsMode) {
-    showToast('レイアウト編集モード中はスタンプを追加できません。', 'warning');
-    return;
-  }
   fabric.Image.fromURL(dataUrl, (img) => {
     const scale = (originalWidth * 0.12) / img.width; // Fits nicely (12% of template width)
     img.set({
@@ -425,127 +423,7 @@ function addOverlayToCanvas(dataUrl) {
   });
 }
 
-/**
- * Layout Coordinate Edit Mode (Studio Mode)
- */
-function enterEditCoordsMode() {
-  if (isEditCoordsMode) return;
-  isEditCoordsMode = true;
 
-  btnToggleEditMode.classList.add('btn-active');
-  configEditorBar.style.display = 'flex';
-
-  // 1. Disable selectability of overlay stamps on canvas
-  canvas.getObjects().forEach(obj => {
-    obj.selectable = false;
-    obj.evented = false;
-  });
-
-  // 2. Draw helper resizable boxes for title & sections
-  const fontColor = '#1E314B';
-
-  // Title Box Helper
-  const titleBox = activeCoords.title;
-  const titleRect = new fabric.Rect({
-    left: titleBox.x,
-    top: titleBox.y,
-    width: titleBox.w,
-    height: titleBox.h,
-    fill: 'rgba(99, 102, 241, 0.25)',
-    stroke: '#6366F1',
-    strokeWidth: 4,
-    name: 'title',
-    hasRotatingPoint: false,
-    cornerColor: '#6366F1',
-    cornerSize: 12,
-    transparentCorners: false
-  });
-  canvas.add(titleRect);
-
-  // Section Boxes Helpers
-  activeCoords.sections.forEach((sec, idx) => {
-    const secRect = new fabric.Rect({
-      left: sec.x,
-      top: sec.y,
-      width: sec.w,
-      height: sec.h,
-      fill: 'rgba(16, 185, 129, 0.2)',
-      stroke: '#10B981',
-      strokeWidth: 3,
-      name: `section-${idx}`,
-      hasRotatingPoint: false,
-      cornerColor: '#10B981',
-      cornerSize: 10,
-      transparentCorners: false
-    });
-    canvas.add(secRect);
-  });
-
-  canvas.discardActiveObject();
-  canvas.renderAll();
-  showToast('レイアウト編集モードに入りました。テキスト枠を調整してください。', 'warning');
-}
-
-function exitEditCoordsMode(saveChanges = true) {
-  if (!isEditCoordsMode) return;
-  isEditCoordsMode = false;
-
-  btnToggleEditMode.classList.remove('btn-active');
-  configEditorBar.style.display = 'none';
-
-  // 1. Retrieve new coordinates if requested
-  if (saveChanges) {
-    const titleRect = canvas.getObjects().find(o => o.name === 'title');
-    const sectionRects = Array.from({ length: 5 }, (_, i) => 
-      canvas.getObjects().find(o => o.name === `section-${i}`)
-    );
-
-    if (titleRect) {
-      activeCoords.title = {
-        x: Math.round(titleRect.left),
-        y: Math.round(titleRect.top),
-        w: Math.round(titleRect.width * titleRect.scaleX),
-        h: Math.round(titleRect.height * titleRect.scaleY)
-      };
-    }
-
-    sectionRects.forEach((rect, idx) => {
-      if (rect) {
-        activeCoords.sections[idx] = {
-          x: Math.round(rect.left),
-          y: Math.round(rect.top),
-          w: Math.round(rect.width * rect.scaleX),
-          h: Math.round(rect.height * rect.scaleY)
-        };
-      }
-    });
-
-    // Save config back to DB
-    db.configs.put({
-      template_id: activeTemplate.id,
-      title: activeCoords.title,
-      sections: activeCoords.sections
-    }).then(() => {
-      showToast('テキストレイアウトを保存しました');
-    });
-  }
-
-  // 2. Remove all editor helper boxes
-  const helpers = canvas.getObjects().filter(o => 
-    o.name === 'title' || o.name?.startsWith('section-')
-  );
-  helpers.forEach(h => canvas.remove(h));
-
-  // 3. Restore stamps selectability
-  canvas.getObjects().forEach(obj => {
-    obj.selectable = true;
-    obj.evented = true;
-  });
-
-  canvas.discardActiveObject();
-  renderCanvasBackground();
-  showToast('レイアウト編集モードを終了しました');
-}
 
 /**
  * High-Resolution PNG Export (dual-canvas conversion)
@@ -845,17 +723,7 @@ function bindUIControls() {
   };
   btnZoomFit.onclick = fitCanvasToWorkspace;
 
-  // Edit Coordinates Mode Toggle
-  btnToggleEditMode.onclick = () => {
-    if (isEditCoordsMode) {
-      exitEditCoordsMode(true);
-    } else {
-      enterEditCoordsMode();
-    }
-  };
 
-  btnSaveCoords.onclick = () => exitEditCoordsMode(true);
-  btnCancelCoords.onclick = () => exitEditCoordsMode(false);
 
   // Clear overlay icons
   btnClearCanvas.onclick = () => {
@@ -925,7 +793,6 @@ function initMobileNavigation() {
   const mbtnText = document.getElementById('mbtn-text');
   const mbtnTemplates = document.getElementById('mbtn-templates');
   const mbtnOverlays = document.getElementById('mbtn-overlays');
-  const mbtnAdjust = document.getElementById('mbtn-adjust');
 
   const leftSidebar = document.querySelector('.editor-sidebar');
   const rightSidebar = document.querySelector('.assets-sidebar');
@@ -966,28 +833,7 @@ function initMobileNavigation() {
     tabOverlays.click();
   };
 
-  mbtnAdjust.onclick = (e) => {
-    e.stopPropagation();
-    clearMobileActive();
-    mbtnAdjust.classList.add('active');
-    
-    // Trigger edit coordinate bounds
-    if (!isEditCoordsMode) {
-      enterEditCoordsMode();
-    }
-  };
 
-  // If exiting layout adjustments from top bar, reset bottom nav state to text tab
-  btnSaveCoords.addEventListener('click', () => {
-    if (window.innerWidth <= 768) {
-      mbtnText.click();
-    }
-  });
-  btnCancelCoords.addEventListener('click', () => {
-    if (window.innerWidth <= 768) {
-      mbtnText.click();
-    }
-  });
 
   // Set default active view on mobile on load (safely triggered after all click handlers are bound)
   if (window.innerWidth <= 768) {
