@@ -848,7 +848,7 @@ function bindUIControls() {
   // Window Resize
   window.onresize = fitCanvasToWorkspace;
 
-  // Mobile Drawer toggles
+  // Mobile Drawer toggles (for tablet size 769px - 1024px)
   const btnToggleEditor = document.getElementById('btn-toggle-editor');
   const btnToggleAssets = document.getElementById('btn-toggle-assets');
   const leftSidebar = document.querySelector('.editor-sidebar');
@@ -870,11 +870,88 @@ function bindUIControls() {
     };
   }
 
-  // Close drawers when clicking on the workspace (on mobile/tablet)
+  // Close drawers when clicking on the workspace (on tablet drawer views)
   workspaceEl.addEventListener('click', () => {
-    if (window.innerWidth <= 1024) {
+    if (window.innerWidth > 768 && window.innerWidth <= 1024) {
       leftSidebar.classList.remove('sidebar-open');
       rightSidebar.classList.remove('sidebar-open');
+    }
+  });
+}
+
+/**
+ * Mobile Navigation controller for split screen views (under 768px)
+ */
+function initMobileNavigation() {
+  const mbtnText = document.getElementById('mbtn-text');
+  const mbtnTemplates = document.getElementById('mbtn-templates');
+  const mbtnOverlays = document.getElementById('mbtn-overlays');
+  const mbtnAdjust = document.getElementById('mbtn-adjust');
+
+  const leftSidebar = document.querySelector('.editor-sidebar');
+  const rightSidebar = document.querySelector('.assets-sidebar');
+
+  const tabTemplates = document.getElementById('tab-templates');
+  const tabOverlays = document.getElementById('tab-overlays');
+
+  function clearMobileActive() {
+    document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active'));
+    leftSidebar.classList.remove('active-mobile');
+    rightSidebar.classList.remove('active-mobile');
+  }
+
+  // Set default active view on mobile on load
+  if (window.innerWidth <= 768) {
+    leftSidebar.classList.add('active-mobile');
+  }
+
+  mbtnText.onclick = (e) => {
+    e.stopPropagation();
+    clearMobileActive();
+    mbtnText.classList.add('active');
+    leftSidebar.classList.add('active-mobile');
+  };
+
+  mbtnTemplates.onclick = (e) => {
+    e.stopPropagation();
+    clearMobileActive();
+    mbtnTemplates.classList.add('active');
+    rightSidebar.classList.add('active-mobile');
+    
+    // Programmatically trigger templates tab inside assets pane
+    tabTemplates.click();
+  };
+
+  mbtnOverlays.onclick = (e) => {
+    e.stopPropagation();
+    clearMobileActive();
+    mbtnOverlays.classList.add('active');
+    rightSidebar.classList.add('active-mobile');
+    
+    // Programmatically trigger overlays tab inside assets pane
+    tabOverlays.click();
+  };
+
+  mbtnAdjust.onclick = (e) => {
+    e.stopPropagation();
+    clearMobileActive();
+    mbtnAdjust.classList.add('active');
+    
+    // Trigger edit coordinate bounds
+    if (!isEditCoordsMode) {
+      enterEditCoordsMode();
+    }
+  };
+
+  // If exiting layout adjustments from top bar, reset bottom nav state to text tab
+  btnSaveCoords.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      mbtnText.click();
+    }
+  });
+  btnCancelCoords.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      mbtnText.click();
     }
   });
 }
@@ -898,6 +975,7 @@ window.onload = async () => {
       initThemePreference();
       initFileUploads();
       initXmlEditorShortcuts();
+      initMobileNavigation();
 
       // 5. Load default starter data
       xmlInput.value = DEFAULT_XML_TEXT;

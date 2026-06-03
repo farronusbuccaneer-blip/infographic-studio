@@ -652,7 +652,11 @@ textarea#xml-input:focus {
   display: none;
 }
 
-@media (max-width: 1024px) {
+.mobile-nav-bar {
+  display: none;
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
   .mobile-only {
     display: inline-flex;
   }
@@ -745,19 +749,145 @@ textarea#xml-input:focus {
   }
 }
 
+@media (max-width: 768px) {
+  /* Mobile-optimized split workspace */
+  .mobile-nav-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: var(--sidebar-bg);
+    border-top: 1px solid var(--border-color);
+    backdrop-filter: var(--glass-blur);
+    z-index: 1100;
+    justify-content: space-around;
+    align-items: center;
+  }
+  
+  .mobile-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    flex: 1;
+    height: 100%;
+    transition: all 0.2s ease;
+  }
+  
+  .mobile-nav-btn i {
+    font-size: 18px;
+  }
+  
+  .mobile-nav-btn.active {
+    color: var(--accent-color);
+  }
+
+  /* Stack main vertically: top half workspace, bottom half active sidebar panel */
+  main {
+    flex-direction: column;
+    height: calc(100vh - 56px - 60px); /* header (56px) + bottom nav (60px) */
+  }
+
+  header {
+    padding: 0 12px;
+    height: 56px;
+  }
+  
+  .logo-text {
+    display: none;
+  }
+  
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .workspace {
+    height: 48%; /* Top half of screen */
+    width: 100%;
+    flex: none;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  /* Sidebars stacked at the bottom */
+  .editor-sidebar, .assets-sidebar {
+    position: fixed;
+    bottom: 60px; /* Above the mobile nav bar */
+    left: 0;
+    right: 0;
+    width: 100% !important;
+    height: 52% !important; /* Bottom half of screen */
+    border: none;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--sidebar-bg);
+    box-shadow: var(--shadow-lg);
+    z-index: 1050;
+    transform: translateY(105%); /* Hidden below viewport */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .editor-sidebar.active-mobile, .assets-sidebar.active-mobile {
+    transform: translateY(0); /* Slides up to active view */
+  }
+
+  /* Adjust elements to fit compact vertical heights */
+  .textarea-container {
+    padding: 8px 12px 12px 12px;
+  }
+  
+  .xml-shortcuts {
+    padding: 8px 12px 4px 12px;
+  }
+
+  .tabs-content {
+    padding: 12px;
+  }
+
+  .canvas-hint {
+    font-size: 9px;
+    width: 95%;
+    bottom: 4px;
+    padding: 4px 8px;
+  }
+
+  .zoom-controls {
+    display: none; /* Hide zoom controllers to prevent clutter */
+  }
+
+  /* Config Editor Bar optimized for narrow screens */
+  .config-editor-bar {
+    padding: 8px 12px;
+    font-size: 12px;
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+    top: 0;
+  }
+  
+  .config-editor-info {
+    font-size: 11px;
+  }
+}
+
 @media (max-width: 640px) {
-  /* Ultra compact styles for mobile phones */
   .btn span {
-    display: none; /* Hide button texts, keep only icons on phones */
+    display: none; /* Icon-only headers on narrow phones */
   }
   .btn i {
     margin: 0;
   }
   .btn {
     padding: 8px;
-  }
-  
-  .zoom-controls {
-    display: none; /* Save space on tiny devices */
   }
 }
