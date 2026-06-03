@@ -656,6 +656,63 @@ textarea#xml-input:focus {
   display: none;
 }
 
+/* Mobile Download Modal Styles */
+.mobile-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.mobile-modal-content {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px;
+  max-width: 450px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow-lg);
+}
+
+.mobile-modal-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.mobile-modal-img-wrap {
+  flex: 1;
+  width: 100%;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: #FAF8F5;
+}
+
+.mobile-modal-img-wrap img {
+  max-width: 100%;
+  max-height: 50vh;
+  object-fit: contain;
+  box-shadow: var(--shadow-md);
+}
+
 @media (min-width: 769px) and (max-width: 1024px) {
   .mobile-only {
     display: inline-flex;
@@ -698,10 +755,16 @@ textarea#xml-input:focus {
     border-right: 1px solid var(--border-color);
     box-shadow: var(--shadow-lg);
     z-index: 1000;
+    
+    /* Fix click blocking when collapsed drawer sits off-screen */
+    visibility: hidden;
+    pointer-events: none;
   }
   
   .editor-sidebar.sidebar-open {
     transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .assets-sidebar {
@@ -717,10 +780,16 @@ textarea#xml-input:focus {
     border-left: 1px solid var(--border-color);
     box-shadow: var(--shadow-lg);
     z-index: 1000;
+    
+    /* Fix click blocking when collapsed drawer sits off-screen */
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .assets-sidebar.sidebar-open {
     transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
   }
 
   /* Adjust center workspace layout */
@@ -835,10 +904,18 @@ textarea#xml-input:focus {
     z-index: 1050;
     transform: translateY(105%); /* Hidden below viewport */
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Flex layouts for sidebars inside mobile bottom halves */
+    display: flex !important;
+    flex-direction: column;
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .editor-sidebar.active-mobile, .assets-sidebar.active-mobile {
     transform: translateY(0); /* Slides up to active view */
+    visibility: visible;
+    pointer-events: auto;
   }
 
   /* Adjust elements to fit compact vertical heights */

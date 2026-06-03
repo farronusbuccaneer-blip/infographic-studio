@@ -173,6 +173,22 @@
     </section>
   </main>
 
+  <!-- Mobile Download Modal (for saving on iOS/Android browsers) -->
+  <div id="mobile-download-modal" class="mobile-modal">
+    <div class="mobile-modal-content">
+      <div class="mobile-modal-title">
+        <i class="fa-solid fa-circle-info" style="color: var(--accent-color);"></i>
+        <span>画像を長押しして保存してください</span>
+      </div>
+      <div class="mobile-modal-img-wrap">
+        <img id="mobile-download-img" alt="書き出された図解画像">
+      </div>
+      <button id="btn-close-download-modal" class="btn btn-primary" style="width: 100%;">
+        <i class="fa-solid fa-xmark"></i> 閉じる
+      </button>
+    </div>
+  </div>
+
   <!-- Float Toast Notifications -->
   <div id="toast-container" class="toast-container"></div>
 

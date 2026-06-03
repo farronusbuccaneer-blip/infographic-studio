@@ -567,13 +567,11 @@ function downloadGraphic() {
   const overlays = canvas.getObjects();
   
   overlays.forEach(overlay => {
-    // Avoid coordinate box objects
     if (overlay.name === 'title' || overlay.name?.startsWith('section')) return;
     if (!overlay._element) return;
 
     ctx.save();
     
-    // Map overlay visual transformations precisely to high-res coordinates
     const center = overlay.getCenterPoint();
     ctx.translate(center.x, center.y);
     ctx.rotate((overlay.angle || 0) * Math.PI / 180);
@@ -591,15 +589,25 @@ function downloadGraphic() {
     ctx.restore();
   });
 
-  // Download logic via dynamic links
-  const link = document.createElement('a');
-  link.download = `infographic_${Date.now()}.png`;
-  link.href = exportCanvas.toDataURL('image/png');
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  showToast('図解画像のダウンロードが完了しました！');
+  const dataUrl = exportCanvas.toDataURL('image/png');
+
+  if (window.innerWidth <= 768) {
+    // Mobile/Tablet download popup modal (requires long press to save)
+    const modal = document.getElementById('mobile-download-modal');
+    const modalImg = document.getElementById('mobile-download-img');
+    modalImg.src = dataUrl;
+    modal.style.display = 'flex';
+    showToast('画像を生成しました。長押しして保存してください。', 'warning');
+  } else {
+    // Desktop download logic via dynamic link click
+    const link = document.createElement('a');
+    link.download = `infographic_${Date.now()}.png`;
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('図解画像のダウンロードが完了しました！');
+  }
 }
 
 /**
@@ -841,6 +849,14 @@ function bindUIControls() {
 
   // Export Graphic
   btnDownload.onclick = downloadGraphic;
+
+  // Mobile download modal close
+  const btnCloseDownloadModal = document.getElementById('btn-close-download-modal');
+  if (btnCloseDownloadModal) {
+    btnCloseDownloadModal.onclick = () => {
+      document.getElementById('mobile-download-modal').style.display = 'none';
+    };
+  }
 
   // Debounced input listeners on editor textarea
   xmlInput.oninput = triggerRenderDebounced;
