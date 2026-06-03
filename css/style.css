@@ -564,27 +564,7 @@ textarea#xml-input:focus {
   }
 }
 
-/* Canvas Hints Panel */
-.canvas-hint {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(17, 24, 39, 0.85);
-  color: var(--text-secondary);
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  pointer-events: none;
-  backdrop-filter: blur(4px);
-  border: 1px solid var(--border-color);
-  text-align: center;
-}
 
-.light-theme .canvas-hint {
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--text-secondary);
-}
 
 /* Loading Overlay */
 .loading-screen {
@@ -770,11 +750,7 @@ textarea#xml-input:focus {
     width: 100%;
   }
 
-  .canvas-hint {
-    font-size: 10px;
-    width: 90%;
-    bottom: 8px;
-  }
+
 
 
 }
@@ -945,14 +921,7 @@ textarea#xml-input:focus {
     transform: rotate(180deg);
   }
 
-  .canvas-hint {
-    position: relative !important;
-    left: 0 !important;
-    transform: none !important;
-    margin: 10px auto !important;
-    width: 90% !important;
-    font-size: 10px !important;
-  }
+
 
   .zoom-controls {
     display: none !important;

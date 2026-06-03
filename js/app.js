@@ -168,25 +168,9 @@ function initFabricCanvas() {
       }
     }
   });
-
-  // Track active stamps and update instructions
-  canvas.on('selection:created', updateHintText);
-  canvas.on('selection:cleared', updateHintText);
 }
 
-function updateHintText() {
-  const active = canvas.getActiveObject();
-  const hintText = document.getElementById('hint-text');
-  if (active) {
-    if (active.name === 'title' || active.name?.startsWith('section')) {
-      hintText.innerHTML = `<i class="fa-solid fa-arrows-up-down-left-right"></i> テキストボックスの角をドラッグしてサイズ調整、移動できます。`;
-    } else {
-      hintText.innerHTML = `<i class="fa-solid fa-arrows-spin"></i> [Delete]でスタンプ削除。角でサイズ/回転を調整できます。`;
-    }
-  } else {
-    hintText.innerHTML = `<i class="fa-solid fa-circle-question"></i> 画像を選択してキャンバスに追加。ドラッグで移動、角ハンドルで縮尺/回転、[Delete]キーで削除。`;
-  }
-}
+
 
 /**
  * Core Dynamic Render: Draws background + XML text to base high-res canvas
