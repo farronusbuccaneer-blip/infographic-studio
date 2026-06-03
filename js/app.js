@@ -426,11 +426,6 @@ function addOverlayToCanvas(dataUrl) {
  * High-Resolution PNG Export (dual-canvas conversion)
  */
 function downloadGraphic() {
-  if (isEditCoordsMode) {
-    showToast('レイアウト調整中はダウンロードできません。一度保存してください。', 'warning');
-    return;
-  }
-  
   showToast('画像を出力中...', 'warning');
 
   try {
