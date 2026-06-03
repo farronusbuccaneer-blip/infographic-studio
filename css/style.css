@@ -815,6 +815,7 @@ textarea#xml-input:focus {
     height: auto !important;
     padding: 16px 8px !important;
     display: flex !important;
+    flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
     overflow: visible !important;
