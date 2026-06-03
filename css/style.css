@@ -918,9 +918,21 @@ textarea#xml-input:focus {
     pointer-events: auto;
   }
 
-  /* Adjust elements to fit compact vertical heights */
+  /* Adjust elements to fit compact vertical heights and prevent flex height collapsing */
   .textarea-container {
     padding: 8px 12px 12px 12px;
+    flex: 1 1 auto !important;
+    height: calc(100% - 130px) !important;
+    min-height: 180px !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  textarea#xml-input {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 150px !important;
+    display: block !important;
   }
   
   .xml-shortcuts {

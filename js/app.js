@@ -916,11 +916,6 @@ function initMobileNavigation() {
     rightSidebar.classList.remove('active-mobile');
   }
 
-  // Set default active view on mobile on load
-  if (window.innerWidth <= 768) {
-    leftSidebar.classList.add('active-mobile');
-  }
-
   mbtnText.onclick = (e) => {
     e.stopPropagation();
     clearMobileActive();
@@ -970,6 +965,11 @@ function initMobileNavigation() {
       mbtnText.click();
     }
   });
+
+  // Set default active view on mobile on load (safely triggered after all click handlers are bound)
+  if (window.innerWidth <= 768) {
+    mbtnText.click();
+  }
 }
 
 /**
