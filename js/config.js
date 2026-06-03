@@ -8,48 +8,18 @@ const DEFAULT_TEMPLATE_ID = 'default-template';
 // Coordinates here represent the inset area (where text is actually drawn) 
 // to prevent text from overlapping borders.
 const DEFAULT_COORDS = {
-  title: { x: 120, y: 110, w: 960, h: 240 },
+  title: { x: 120, y: 103, w: 960, h: 225 },
   sections: [
-    { x: 290, y: 480, w: 810, h: 110 },
-    { x: 290, y: 690, w: 810, h: 110 },
-    { x: 290, y: 900, w: 810, h: 110 },
-    { x: 290, y: 1110, w: 810, h: 110 },
-    { x: 290, y: 1320, w: 810, h: 110 }
+    { x: 290, y: 450, w: 810, h: 103 },
+    { x: 290, y: 647, w: 810, h: 103 },
+    { x: 290, y: 844, w: 810, h: 103 },
+    { x: 290, y: 1041, w: 810, h: 103 },
+    { x: 290, y: 1238, w: 810, h: 103 }
   ]
 };
 
 // Default XML template loaded on first startup
-const DEFAULT_XML_TEXT = `<title>図解作成の3つのコツ</title>
-
-<section1>
-  <row1>1. 情報を<red>極限までシンプル</red>に</row1>
-  <row2>文字数は最小限に抑え、伝えたい要点を1文にまとめましょう。</row2>
-  <row3>余白を十分に取ることで、読者の視認性と理解度が劇的に向上します。</row3>
-</section1>
-
-<section2>
-  <row1>2. 配色の黄金比ルールを決める</row1>
-  <row2>ベースカラー70%、メインカラー25%、<red>アクセントカラー5%</red>が鉄則。</row2>
-  <row3>全体で使う色を<red>3色以内</red>に絞ることで、洗練された印象になります。</row3>
-</section2>
-
-<section3>
-  <row1>3. <red>アイコンや図形</red>を効果的に使う</row1>
-  <row2>文字情報だけでなく、内容を直感的に表す透過PNGを配置します。</row2>
-  <row3>読者の目を引きつける視覚的フックになり、SNSでの拡散力がアップ。</row3>
-</section3>
-
-<section4>
-  <row1>4. 要素を美しく整列する</row1>
-  <row2>要素の左揃えや中央揃えを徹底し、ズレを無くします。</row2>
-  <row3>デザインが整理されていると、情報の信頼性が高まります。</row3>
-</section4>
-
-<section5>
-  <row1>5. スマホでの見え方を意識する</row1>
-  <row2>ターゲットデバイスでの文字の読みやすさを確認しましょう。</row2>
-  <row3><red>少し大きめの文字サイズ</red>を意識することが、成功への近道です。</row3>
-</section5>`;
+const DEFAULT_XML_TEXT = ``;
 
 /**
  * Programmatically generates the high-res default template as a Base64 PNG.
@@ -58,7 +28,7 @@ const DEFAULT_XML_TEXT = `<title>図解作成の3つのコツ</title>
 function generateDefaultTemplate() {
   const canvas = document.createElement('canvas');
   canvas.width = 1200;
-  canvas.height = 1600;
+  canvas.height = 1500;
   const ctx = canvas.getContext('2d');
 
   // 1. Draw Cream Background
@@ -82,21 +52,21 @@ function generateDefaultTemplate() {
   // 3. Draw Title Box (Beige container with Red Drop Shadow and thick Navy Border)
   // Drop Shadow
   ctx.fillStyle = coralColor;
-  ctx.fillRect(80 + 12, 80 + 12, 1040, 300);
+  ctx.fillRect(80 + 12, 75 + 12, 1040, 280);
   // Main Rect
   ctx.fillStyle = '#F2EFE6';
-  ctx.fillRect(80, 80, 1040, 300);
+  ctx.fillRect(80, 75, 1040, 280);
   ctx.strokeStyle = navyColor;
   ctx.lineWidth = 12;
-  ctx.strokeRect(80, 80, 1040, 300);
+  ctx.strokeRect(80, 75, 1040, 280);
 
   // 4. Draw 5 Section Rows
   const boxX = 270;
   const boxW = 850;
-  const boxH = 150;
+  const boxH = 140;
   
   for (let i = 0; i < 5; i++) {
-    const boxY = 460 + i * 210;
+    const boxY = 431 + i * 197;
 
     // White Text Container Box
     ctx.fillStyle = '#FFFFFF';
@@ -107,7 +77,7 @@ function generateDefaultTemplate() {
 
     // Circle for Number
     const circleX = 100;
-    const circleY = boxY + 75;
+    const circleY = boxY + 70;
     const circleRadius = 34;
     
     ctx.beginPath();
@@ -124,9 +94,9 @@ function generateDefaultTemplate() {
 
     // Checkbox Box
     const checkX = 180;
-    const checkY = boxY + 50;
+    const checkY = boxY + 47;
     const checkW = 50;
-    const checkH = 50;
+    const checkH = 47;
 
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(checkX, checkY, checkW, checkH);
@@ -136,9 +106,9 @@ function generateDefaultTemplate() {
 
     // Hand-drawn Checkmark
     ctx.beginPath();
-    ctx.moveTo(checkX + 11, checkY + 25);
-    ctx.lineTo(checkX + 21, checkY + 36);
-    ctx.lineTo(checkX + 41, checkY + 12);
+    ctx.moveTo(checkX + 11, checkY + 23);
+    ctx.lineTo(checkX + 21, checkY + 34);
+    ctx.lineTo(checkX + 41, checkY + 11);
     ctx.strokeStyle = navyColor;
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
@@ -148,8 +118,8 @@ function generateDefaultTemplate() {
 
   // 5. Draw Bottom Horizontal Accent Line
   ctx.beginPath();
-  ctx.moveTo(80, 1520);
-  ctx.lineTo(1120, 1520);
+  ctx.moveTo(80, 1425);
+  ctx.lineTo(1120, 1425);
   ctx.strokeStyle = navyColor;
   ctx.lineWidth = 6;
   ctx.lineCap = 'round';
@@ -164,7 +134,7 @@ function generateDefaultTemplate() {
  */
 function getScaledCoords(targetWidth, targetHeight) {
   const scaleX = targetWidth / 1200;
-  const scaleY = targetHeight / 1600;
+  const scaleY = targetHeight / 1500;
 
   return {
     title: {

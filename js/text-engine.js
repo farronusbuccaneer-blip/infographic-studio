@@ -259,7 +259,7 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
     // Skip section if empty
     if (!sec.row1 && !sec.row2 && !sec.row3) continue;
 
-    let s = 48; // Increased starting base font size (two sizes larger)
+    let s = 60; // Increased starting base font size (two sizes larger, now 60)
     const minS = 12;
     
     const r1Tokens = tokenizeText(sec.row1);
@@ -371,14 +371,14 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
   // 3. Render Footer (Branding & Bookmark CTA)
   // Scale footer relative to active template resolution
   const scaleX = originalWidth / 1200;
-  const scaleY = originalHeight / 1600;
+  const scaleY = originalHeight / 1500;
   const footerS = Math.round(28 * Math.min(scaleX, scaleY));
   
   ctx.font = `bold ${footerS}px ${fontFam}`;
   ctx.fillStyle = '#1E314B'; // Navy color matches template border
   ctx.textBaseline = 'middle';
   
-  const footerY = 1555 * scaleY; // Vertical center of the footer space (line is at 1520)
+  const footerY = 1458 * scaleY; // Vertical center of the footer space (line is at 1425)
 
   // Bottom Left: @farron_us
   ctx.textAlign = 'left';

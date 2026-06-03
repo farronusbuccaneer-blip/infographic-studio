@@ -64,25 +64,22 @@ function showToast(message, type = 'success') {
  * Initialize Default Assets in IndexedDB on first load
  */
 async function initializeDefaultAssets() {
-  // 1. Templates
-  const templateCount = await db.templates.count();
-  if (templateCount === 0) {
-    const defaultDataUrl = generateDefaultTemplate();
-    const defaultTemplate = {
-      id: DEFAULT_TEMPLATE_ID,
-      name: '標準チェックリスト',
-      data_url: defaultDataUrl,
-      created_at: Date.now()
-    };
-    await db.templates.add(defaultTemplate);
-    
-    // Save default configuration
-    await db.configs.add({
-      template_id: DEFAULT_TEMPLATE_ID,
-      title: DEFAULT_COORDS.title,
-      sections: DEFAULT_COORDS.sections
-    });
-  }
+  // 1. Templates (Always put/overwrite the system default standard template to keep it updated with the 4:5 aspect ratio)
+  const defaultDataUrl = generateDefaultTemplate();
+  const defaultTemplate = {
+    id: DEFAULT_TEMPLATE_ID,
+    name: '標準チェックリスト',
+    data_url: defaultDataUrl,
+    created_at: Date.now()
+  };
+  await db.templates.put(defaultTemplate);
+  
+  // Save/Overwrite default coordinates configuration
+  await db.configs.put({
+    template_id: DEFAULT_TEMPLATE_ID,
+    title: DEFAULT_COORDS.title,
+    sections: DEFAULT_COORDS.sections
+  });
 
   // 2. Stamps/Overlays
   const overlayCount = await db.overlays.count();
