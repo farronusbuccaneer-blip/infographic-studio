@@ -250,13 +250,18 @@ function applyZoom() {
 }
 
 function fitCanvasToWorkspace() {
-  const padding = 80;
+  const padding = window.innerWidth <= 768 ? 24 : 80;
   const workW = workspaceEl.clientWidth - padding;
-  const workH = workspaceEl.clientHeight - padding;
   
-  const zoomX = workW / originalWidth;
-  const zoomY = workH / originalHeight;
-  zoomRatio = Math.min(zoomX, zoomY, 1.1); // Max zoom fit is 110%
+  if (window.innerWidth <= 768) {
+    // On mobile, only scale by width since height is scrollable and dynamic
+    zoomRatio = Math.min(workW / originalWidth, 1.1);
+  } else {
+    const workH = workspaceEl.clientHeight - padding;
+    const zoomX = workW / originalWidth;
+    const zoomY = workH / originalHeight;
+    zoomRatio = Math.min(zoomX, zoomY, 1.1); // Max zoom fit is 110%
+  }
   applyZoom();
 }
 
