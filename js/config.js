@@ -8,13 +8,13 @@ const DEFAULT_TEMPLATE_ID = 'default-template';
 // Coordinates here represent the inset area (where text is actually drawn) 
 // to prevent text from overlapping borders.
 const DEFAULT_COORDS = {
-  title: { x: 120, y: 103, w: 960, h: 225 },
+  title: { x: 120, y: 95, w: 960, h: 140 },
   sections: [
-    { x: 290, y: 450, w: 810, h: 103 },
-    { x: 290, y: 647, w: 810, h: 103 },
-    { x: 290, y: 844, w: 810, h: 103 },
-    { x: 290, y: 1041, w: 810, h: 103 },
-    { x: 290, y: 1238, w: 810, h: 103 }
+    { x: 290, y: 350, w: 700, h: 130 },
+    { x: 290, y: 560, w: 700, h: 130 },
+    { x: 290, y: 770, w: 700, h: 130 },
+    { x: 290, y: 980, w: 700, h: 130 },
+    { x: 290, y: 1190, w: 700, h: 130 }
   ]
 };
 
@@ -52,21 +52,21 @@ function generateDefaultTemplate() {
   // 3. Draw Title Box (Beige container with Red Drop Shadow and thick Navy Border)
   // Drop Shadow
   ctx.fillStyle = coralColor;
-  ctx.fillRect(80 + 12, 75 + 12, 1040, 280);
+  ctx.fillRect(80 + 12, 75 + 12, 1040, 180);
   // Main Rect
   ctx.fillStyle = '#F2EFE6';
-  ctx.fillRect(80, 75, 1040, 280);
+  ctx.fillRect(80, 75, 1040, 180);
   ctx.strokeStyle = navyColor;
   ctx.lineWidth = 12;
-  ctx.strokeRect(80, 75, 1040, 280);
+  ctx.strokeRect(80, 75, 1040, 180);
 
   // 4. Draw 5 Section Rows
   const boxX = 270;
   const boxW = 850;
-  const boxH = 140;
+  const boxH = 160;
   
   for (let i = 0; i < 5; i++) {
-    const boxY = 431 + i * 197;
+    const boxY = 335 + i * 210;
 
     // White Text Container Box
     ctx.fillStyle = '#FFFFFF';
@@ -77,7 +77,7 @@ function generateDefaultTemplate() {
 
     // Circle for Number
     const circleX = 100;
-    const circleY = boxY + 70;
+    const circleY = boxY + 80;
     const circleRadius = 34;
     
     ctx.beginPath();
@@ -94,7 +94,7 @@ function generateDefaultTemplate() {
 
     // Checkbox Box
     const checkX = 180;
-    const checkY = boxY + 47;
+    const checkY = boxY + 56;
     const checkW = 50;
     const checkH = 47;
 

@@ -8,8 +8,12 @@ let activeTemplate = null;
 let activeCoords = null;
 let zoomRatio = 1.0;
 let originalWidth = 1200;
-let originalHeight = 1600;
+let originalHeight = 1500;
 let textRenderDebounceTimer = null;
+
+// Section Images State
+let activeSectionImages = Array.from({ length: 5 }, () => null);
+let selectingSectionIndex = null;
 
 // DOM Elements
 const loadingScreen = document.getElementById('loading-screen');
@@ -156,13 +160,30 @@ function initFabricCanvas() {
         return;
       }
       const active = canvas.getActiveObject();
-      // Don't delete bounding boxes in Edit Coordinate mode
-      if (active && active.name !== 'title' && !active.name?.startsWith('section')) {
+      // Don't delete bounding boxes, but allow deleting section images
+      if (active && active.name !== 'title' && (!active.name?.startsWith('section') || active.isSectionImage)) {
         canvas.remove(active);
         canvas.discardActiveObject();
         canvas.renderAll();
-        showToast('スタンプを削除しました');
+        showToast(active.isSectionImage ? 'セクション画像を削除しました' : 'スタンプを削除しました');
       }
+    }
+  });
+
+  // Auto-save coordinate changes when section images are modified
+  canvas.on('object:modified', (e) => {
+    if (e.target && e.target.isSectionImage) {
+      saveSectionImagesToDb();
+    }
+  });
+
+  // Auto-update UI and save state when section images are removed
+  canvas.on('object:removed', (e) => {
+    if (e.target && e.target.isSectionImage) {
+      const idx = e.target.sectionIndex;
+      activeSectionImages[idx] = null;
+      updateSectionImageUI(idx, null);
+      saveSectionImagesToDb();
     }
   });
 }
@@ -347,6 +368,7 @@ async function selectTemplate(id) {
     // Set background and zoom
     fitCanvasToWorkspace();
     renderCanvasBackground();
+    await loadSectionImagesFromDb();
     loadTemplatesGrid();
     showToast(`背景を「${t.name}」に変更しました`);
   };
@@ -440,7 +462,7 @@ function downloadGraphic() {
     const overlays = canvas.getObjects();
     
     overlays.forEach(overlay => {
-      if (overlay.name === 'title' || overlay.name?.startsWith('section')) return;
+      if (overlay.name === 'title' || (overlay.name?.startsWith('section') && !overlay.isSectionImage)) return;
       if (!overlay._element) return;
 
       ctx.save();
@@ -881,6 +903,270 @@ function initCollapsibleSections() {
 }
 
 /**
+ * Add Stamp Overlay Image to Canvas specifically for a section
+ */
+function addSectionImageToCanvas(index, dataUrl, coordsInfo = null) {
+  // Remove existing section image at this index
+  const existing = canvas.getObjects().find(o => o.isSectionImage && o.sectionIndex === index);
+  if (existing) {
+    canvas.remove(existing);
+  }
+
+  fabric.Image.fromURL(dataUrl, (img) => {
+    const scaleX = originalWidth / 1200;
+    const scaleY = originalHeight / 1500;
+
+    let leftPos = 1060 * scaleX;
+    let topPos = (335 + index * 210 + 80) * scaleY;
+    let scaleVal = (100 * scaleX) / img.width; // Fits nicely
+
+    if (coordsInfo) {
+      leftPos = coordsInfo.left;
+      topPos = coordsInfo.top;
+      scaleVal = coordsInfo.scaleX;
+    }
+
+    img.set({
+      name: 'section-image-' + index,
+      isSectionImage: true,
+      sectionIndex: index,
+      left: leftPos,
+      top: topPos,
+      scaleX: scaleVal,
+      scaleY: scaleVal,
+      originX: 'center',
+      originY: 'center',
+      cornerColor: '#6366F1',
+      cornerSize: 12,
+      transparentCorners: false,
+      borderColor: '#6366F1',
+      lockUniScaling: true,
+      uniformScaling: true,
+      hasRotatingPoint: false
+    });
+
+    img.setControlsVisibility({
+      mt: false,
+      mb: false,
+      ml: false,
+      mr: false,
+      mtr: false
+    });
+
+    canvas.add(img);
+    activeSectionImages[index] = img;
+    canvas.renderAll();
+
+    updateSectionImageUI(index, dataUrl);
+    saveSectionImagesToDb();
+  });
+}
+
+/**
+ * Update the UI Preview for a specific section image
+ */
+function updateSectionImageUI(index, dataUrl) {
+  const preview = document.getElementById(`sec-img-preview-${index}`);
+  const btnSelect = document.querySelector(`.btn-select-sec-image[data-index="${index}"]`);
+  
+  if (preview && btnSelect) {
+    if (dataUrl) {
+      preview.querySelector('img').src = dataUrl;
+      preview.style.display = 'flex';
+      btnSelect.style.display = 'none';
+    } else {
+      preview.style.display = 'none';
+      btnSelect.style.display = 'inline-flex';
+    }
+  }
+}
+
+/**
+ * Save all active section image configurations to IndexedDB configs
+ */
+async function saveSectionImagesToDb() {
+  if (!activeTemplate) return;
+  
+  const savedImagesData = [];
+  const currentImages = canvas.getObjects().filter(o => o.isSectionImage);
+  
+  currentImages.forEach(img => {
+    savedImagesData.push({
+      sectionIndex: img.sectionIndex,
+      data_url: img._element.src,
+      left: img.left,
+      top: img.top,
+      scaleX: img.scaleX,
+      scaleY: img.scaleY
+    });
+  });
+
+  let config = await db.configs.get(activeTemplate.id);
+  if (!config) {
+    config = {
+      template_id: activeTemplate.id,
+      title: activeCoords.title,
+      sections: activeCoords.sections
+    };
+  }
+  config.section_images = savedImagesData;
+  await db.configs.put(config);
+}
+
+/**
+ * Load and render section image configurations from IndexedDB
+ */
+async function loadSectionImagesFromDb() {
+  // Clear existing section images on canvas
+  const existing = canvas.getObjects().filter(o => o.isSectionImage);
+  existing.forEach(o => canvas.remove(o));
+  activeSectionImages.fill(null);
+
+  // Clear UI Previews
+  for (let i = 0; i < 5; i++) {
+    updateSectionImageUI(i, null);
+  }
+
+  if (!activeTemplate) return;
+
+  const config = await db.configs.get(activeTemplate.id);
+  if (config && config.section_images) {
+    for (const imgData of config.section_images) {
+      // Load image asynchronously and place on canvas
+      await new Promise((resolve) => {
+        fabric.Image.fromURL(imgData.data_url, (img) => {
+          img.set({
+            name: 'section-image-' + imgData.sectionIndex,
+            isSectionImage: true,
+            sectionIndex: imgData.sectionIndex,
+            left: imgData.left,
+            top: imgData.top,
+            scaleX: imgData.scaleX,
+            scaleY: imgData.scaleY,
+            originX: 'center',
+            originY: 'center',
+            cornerColor: '#6366F1',
+            cornerSize: 12,
+            transparentCorners: false,
+            borderColor: '#6366F1',
+            lockUniScaling: true,
+            uniformScaling: true,
+            hasRotatingPoint: false
+          });
+
+          img.setControlsVisibility({
+            mt: false,
+            mb: false,
+            ml: false,
+            mr: false,
+            mtr: false
+          });
+
+          canvas.add(img);
+          activeSectionImages[imgData.sectionIndex] = img;
+          updateSectionImageUI(imgData.sectionIndex, imgData.data_url);
+          resolve();
+        });
+      });
+    }
+    canvas.renderAll();
+  }
+}
+
+/**
+ * Open Modal to choose transparent stamp overlay for a section
+ */
+async function openSelectOverlayModal() {
+  const modal = document.getElementById('select-overlay-modal');
+  const grid = document.getElementById('modal-overlays-grid');
+  grid.innerHTML = '';
+  
+  const list = await db.overlays.orderBy('created_at').reverse().toArray();
+  
+  if (list.length === 0) {
+    grid.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">登録されている透過スタンプがありません。「スタンプ」タブからアップロードしてください。</div>';
+  } else {
+    list.forEach(o => {
+      const card = document.createElement('div');
+      card.className = 'asset-card overlay-card';
+      
+      const img = document.createElement('img');
+      img.src = o.data_url;
+      card.appendChild(img);
+      
+      card.onclick = () => {
+        if (selectingSectionIndex !== null) {
+          addSectionImageToCanvas(selectingSectionIndex, o.data_url);
+        }
+        closeSelectOverlayModal();
+      };
+      
+      grid.appendChild(card);
+    });
+  }
+  
+  modal.style.display = 'flex';
+}
+
+/**
+ * Close transparent stamp selection modal
+ */
+function closeSelectOverlayModal() {
+  document.getElementById('select-overlay-modal').style.display = 'none';
+  selectingSectionIndex = null;
+}
+
+/**
+ * Initialize section image configurations UI event listeners
+ */
+function initSectionImagesUI() {
+  // Bind Select button click
+  document.querySelectorAll('.btn-select-sec-image').forEach(btn => {
+    btn.onclick = () => {
+      selectingSectionIndex = parseInt(btn.getAttribute('data-index'));
+      openSelectOverlayModal();
+    };
+  });
+
+  // Bind Close select modal
+  const btnCloseSelectModal = document.getElementById('btn-close-select-modal');
+  if (btnCloseSelectModal) {
+    btnCloseSelectModal.onclick = closeSelectOverlayModal;
+  }
+
+  // Bind Clear button click
+  document.querySelectorAll('.btn-clear-sec-image').forEach(btn => {
+    btn.onclick = () => {
+      const index = parseInt(btn.getAttribute('data-index'));
+      const obj = activeSectionImages[index];
+      if (obj) {
+        canvas.remove(obj);
+        canvas.renderAll();
+      }
+      activeSectionImages[index] = null;
+      updateSectionImageUI(index, null);
+      saveSectionImagesToDb();
+      showToast('セクション画像を削除しました', 'warning');
+    };
+  });
+
+  // Accordion toggle logic
+  const secImagesHeader = document.querySelector('.sec-images-header');
+  const secImagesContainer = document.querySelector('.section-images-container');
+  if (secImagesHeader && secImagesContainer) {
+    // Start collapsed by default to save vertical space
+    secImagesContainer.classList.add('collapsed');
+    secImagesHeader.querySelector('.toggle-chevron').style.transform = 'rotate(180deg)';
+    
+    secImagesHeader.onclick = () => {
+      secImagesContainer.classList.toggle('collapsed');
+      const isCollapsed = secImagesContainer.classList.contains('collapsed');
+      secImagesHeader.querySelector('.toggle-chevron').style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+    };
+  }
+}
+
+/**
  * Main Application Bootstrap
  */
 window.onload = async () => {
@@ -901,6 +1187,7 @@ window.onload = async () => {
       initXmlEditorShortcuts();
       initMobileNavigation();
       initCollapsibleSections();
+      initSectionImagesUI();
 
       // 5. Load default starter data
       xmlInput.value = DEFAULT_XML_TEXT;

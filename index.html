@@ -8,7 +8,7 @@
   <meta name="description" content="XML風タグによるテキスト解析と透過PNG配置を組み合わせた、ブラウザ完結の図解画像生成ツール。SNSやブログ用の定型図解を高速に作成。">
   
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=11">
   
   <!-- Font Awesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
@@ -95,6 +95,54 @@
       <div class="textarea-container">
         <textarea id="xml-input" placeholder="ここにXMLタグを入力してください..." spellcheck="false"></textarea>
       </div>
+
+      <!-- Section Images Settings -->
+      <div class="editor-section-header sec-images-header">
+        <span><i class="fa-solid fa-image"></i> セクション画像設定</span>
+        <i class="fa-solid fa-chevron-up toggle-chevron" style="margin-left: auto;"></i>
+      </div>
+      <div class="section-images-container">
+        <div class="section-image-row" data-index="0">
+          <span class="row-label">セクション 1:</span>
+          <button class="btn btn-sm btn-select-sec-image" data-index="0"><i class="fa-solid fa-file-image"></i> 設定</button>
+          <div class="sec-img-preview" id="sec-img-preview-0" style="display: none;">
+            <img src="" alt="preview">
+            <button class="btn-clear-sec-image" data-index="0" title="画像を削除"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+        <div class="section-image-row" data-index="1">
+          <span class="row-label">セクション 2:</span>
+          <button class="btn btn-sm btn-select-sec-image" data-index="1"><i class="fa-solid fa-file-image"></i> 設定</button>
+          <div class="sec-img-preview" id="sec-img-preview-1" style="display: none;">
+            <img src="" alt="preview">
+            <button class="btn-clear-sec-image" data-index="1" title="画像を削除"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+        <div class="section-image-row" data-index="2">
+          <span class="row-label">セクション 3:</span>
+          <button class="btn btn-sm btn-select-sec-image" data-index="2"><i class="fa-solid fa-file-image"></i> 設定</button>
+          <div class="sec-img-preview" id="sec-img-preview-2" style="display: none;">
+            <img src="" alt="preview">
+            <button class="btn-clear-sec-image" data-index="2" title="画像を削除"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+        <div class="section-image-row" data-index="3">
+          <span class="row-label">セクション 4:</span>
+          <button class="btn btn-sm btn-select-sec-image" data-index="3"><i class="fa-solid fa-file-image"></i> 設定</button>
+          <div class="sec-img-preview" id="sec-img-preview-3" style="display: none;">
+            <img src="" alt="preview">
+            <button class="btn-clear-sec-image" data-index="3" title="画像を削除"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+        <div class="section-image-row" data-index="4">
+          <span class="row-label">セクション 5:</span>
+          <button class="btn btn-sm btn-select-sec-image" data-index="4"><i class="fa-solid fa-file-image"></i> 設定</button>
+          <div class="sec-img-preview" id="sec-img-preview-4" style="display: none;">
+            <img src="" alt="preview">
+            <button class="btn-clear-sec-image" data-index="4" title="画像を削除"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- 2. Interactive Canvas Workspace (Center) -->
@@ -176,6 +224,26 @@
     </div>
   </div>
 
+  <!-- Select Overlay Modal for Section Images -->
+  <div id="select-overlay-modal" class="mobile-modal">
+    <div class="mobile-modal-content select-modal-content" style="max-width: 480px; max-height: 80vh;">
+      <div class="mobile-modal-title" style="justify-content: space-between; width: 100%; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-images" style="color: var(--accent-color);"></i>
+          <span>セクション透過画像の選択</span>
+        </div>
+        <button id="btn-close-select-modal" class="btn btn-icon" style="border: none; background: transparent; color: var(--text-secondary); cursor: pointer;" title="閉じる">
+          <i class="fa-solid fa-xmark" style="font-size: 16px;"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="width: 100%; overflow-y: auto; flex: 1; padding-right: 4px;">
+        <div class="assets-grid" id="modal-overlays-grid">
+          <!-- Populated programmatically from IndexedDB -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Float Toast Notifications -->
   <div id="toast-container" class="toast-container"></div>
 
@@ -200,9 +268,9 @@
   </div>
 
   <!-- Code Scripts -->
-  <script src="js/db.js?v=10"></script>
-  <script src="js/config.js?v=10"></script>
-  <script src="js/text-engine.js?v=10"></script>
-  <script src="js/app.js?v=10"></script>
+  <script src="js/db.js?v=11"></script>
+  <script src="js/config.js?v=11"></script>
+  <script src="js/text-engine.js?v=11"></script>
+  <script src="js/app.js?v=11"></script>
 </body>
 </html>

@@ -199,7 +199,7 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
   // 1. Render Title (Strictly wraps on user explicit newlines only, scales down to fit)
   if (parsedText.title && coords.title) {
     const box = coords.title;
-    let s = 110; // Increased starting Title Font Size
+    let s = 60; // Title Font Size basic at 60px
     const minS = 16;
     
     const titleTokens = tokenizeText(parsedText.title);
@@ -259,8 +259,8 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
     // Skip section if empty
     if (!sec.row1 && !sec.row2 && !sec.row3) continue;
 
-    let s = 60; // Increased starting base font size (two sizes larger, now 60)
-    const minS = 12;
+    let scale = 1.0; // Scaling factor starting at 1.0 (corresponds to Row 1 = 40px, Row 2/3 = 30px)
+    const minScale = 0.2;
     
     const r1Tokens = tokenizeText(sec.row1);
     const r2Tokens = tokenizeText(sec.row2);
@@ -269,13 +269,17 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
     let r1Lines = [], r2Lines = [], r3Lines = [];
     let r1H = 0, r2H = 0, r3H = 0;
     let totalH = 0;
-    let s1 = 0;
-    let gap = 0;
+    let s1 = 0, s2 = 0, s3 = 0;
+    let gap12 = 0, gap23 = 0;
 
-    // Search for a fitting font size
-    while (s >= minS) {
-      s1 = Math.round(1.70 * s); // Row 1 header is 1.70x multiplier
-      gap = Math.round(s * 0.70); // Increased gap between active rows
+    // Search for a fitting scale factor
+    while (scale >= minScale) {
+      s1 = Math.round(40 * scale); // Row 1 basic is 40px
+      s2 = Math.round(30 * scale); // Row 2 basic is 30px
+      s3 = Math.round(30 * scale); // Row 3 basic is 30px
+      
+      gap12 = Math.round(15 * scale); // Space between Row 1 and Row 2
+      gap23 = Math.round(10 * scale); // Space between Row 2 and Row 3
       
       // Calculate wraps and heights
       if (sec.row1) {
@@ -288,35 +292,45 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
       }
 
       if (sec.row2) {
-        ctx.font = `bold ${s}px ${fontFam}`;
+        ctx.font = `bold ${s2}px ${fontFam}`;
         r2Lines = wrapStyledText(ctx, r2Tokens, box.w);
-        r2H = r2Lines.length > 0 ? (r2Lines.length - 1) * (s * 1.35) + s : 0;
+        r2H = r2Lines.length > 0 ? (r2Lines.length - 1) * (s2 * 1.35) + s2 : 0;
       } else {
         r2Lines = [];
         r2H = 0;
       }
 
       if (sec.row3) {
-        ctx.font = `bold ${s}px ${fontFam}`;
+        ctx.font = `bold ${s3}px ${fontFam}`;
         r3Lines = wrapStyledText(ctx, r3Tokens, box.w);
-        r3H = r3Lines.length > 0 ? (r3Lines.length - 1) * (s * 1.35) + s : 0;
+        r3H = r3Lines.length > 0 ? (r3Lines.length - 1) * (s3 * 1.35) + s3 : 0;
       } else {
         r3Lines = [];
         r3H = 0;
       }
 
       // Sum height and calculate gaps
-      let activeRows = 0;
-      if (r1H > 0) activeRows++;
-      if (r2H > 0) activeRows++;
-      if (r3H > 0) activeRows++;
-
-      totalH = r1H + r2H + r3H + (activeRows > 1 ? (activeRows - 1) * gap : 0);
+      totalH = 0;
+      let lastBottom = 0;
+      if (r1H > 0) {
+        totalH += r1H;
+        lastBottom = 1;
+      }
+      if (r2H > 0) {
+        if (lastBottom === 1) totalH += gap12;
+        totalH += r2H;
+        lastBottom = 2;
+      }
+      if (r3H > 0) {
+        if (lastBottom === 1) totalH += gap12 + gap23;
+        else if (lastBottom === 2) totalH += gap23;
+        totalH += r3H;
+      }
 
       if (totalH <= box.h) {
         break;
       }
-      s -= 0.5;
+      scale -= 0.02;
     }
 
     // Draw Section Text (all bold)
@@ -335,12 +349,16 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
         });
         currentY += s1 * 1.3;
       });
-      currentY += gap - (s1 * 0.3);
+      if (r2Lines.length > 0) {
+        currentY += gap12 - (s1 * 0.3);
+      } else if (r3Lines.length > 0) {
+        currentY += (gap12 + gap23) - (s1 * 0.3);
+      }
     }
 
     // Draw Row 2
     if (r2Lines.length > 0) {
-      ctx.font = `bold ${s}px ${fontFam}`;
+      ctx.font = `bold ${s2}px ${fontFam}`;
       r2Lines.forEach(line => {
         let currentX = box.x;
         line.forEach(token => {
@@ -348,14 +366,16 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
           ctx.fillText(token.char, currentX, currentY);
           currentX += ctx.measureText(token.char).width;
         });
-        currentY += s * 1.35;
+        currentY += s2 * 1.35;
       });
-      currentY += gap - (s * 0.35);
+      if (r3Lines.length > 0) {
+        currentY += gap23 - (s2 * 0.35);
+      }
     }
 
     // Draw Row 3
     if (r3Lines.length > 0) {
-      ctx.font = `bold ${s}px ${fontFam}`;
+      ctx.font = `bold ${s3}px ${fontFam}`;
       r3Lines.forEach(line => {
         let currentX = box.x;
         line.forEach(token => {
@@ -363,7 +383,7 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
           ctx.fillText(token.char, currentX, currentY);
           currentX += ctx.measureText(token.char).width;
         });
-        currentY += s * 1.35;
+        currentY += s3 * 1.35;
       });
     }
   }

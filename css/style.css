@@ -947,3 +947,105 @@ textarea#xml-input:focus {
     padding: 8px;
   }
 }
+
+/* Section Images Settings UI */
+.section-images-container {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-color);
+  max-height: 380px;
+  overflow-y: auto;
+  transition: max-height 0.25s ease, padding 0.25s ease;
+}
+
+.section-images-container.collapsed {
+  max-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  overflow: hidden;
+  border-bottom-color: transparent;
+}
+
+.section-image-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.light-theme .section-image-row {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.section-image-row .row-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.sec-img-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sec-img-preview img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border: 1px solid var(--border-color);
+  background: #FFFFFF;
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.btn-clear-sec-image {
+  background: transparent;
+  border: none;
+  color: var(--danger-color);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-clear-sec-image:hover {
+  color: var(--danger-hover);
+}
+
+.btn-select-sec-image {
+  padding: 6px 12px;
+  font-size: 12px;
+  background: var(--accent-light);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.btn-select-sec-image:hover {
+  background: var(--accent-color);
+  color: #FFFFFF;
+}
+
+/* Modal Grid Styles */
+#modal-overlays-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Accordion Header Pointer */
+.sec-images-header {
+  cursor: pointer;
+}
+
