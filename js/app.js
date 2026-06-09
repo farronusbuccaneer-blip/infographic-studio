@@ -992,7 +992,7 @@ function addTitleImageToCanvas(dataUrl, coordsInfo = null) {
     let scaleX = originalWidth / 1200;
     let scaleY = originalHeight / 1500;
 
-    let leftPos = 1020 * scaleX; // Center of the dashed stamp placeholder (920 + 100 = 1020)
+    let leftPos = 1040 * scaleX; // Center of the narrowed stamp area (960 + 80 = 1040)
     let topPos = 165 * scaleY;
     let scaleVal = (160 * scaleY) / img.height; // Fits nicely inside the title box
 

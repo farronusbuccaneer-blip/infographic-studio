@@ -8,7 +8,7 @@ const DEFAULT_TEMPLATE_ID = 'default-template';
 // Coordinates here represent the inset area (where text is actually drawn) 
 // to prevent text from overlapping borders.
 const DEFAULT_COORDS = {
-  title: { x: 120, y: 95, w: 720, h: 140 },
+  title: { x: 120, y: 95, w: 800, h: 140 },
   sections: [
     { x: 290, y: 350, w: 700, h: 130 },
     { x: 290, y: 560, w: 700, h: 130 },
@@ -52,13 +52,13 @@ function generateDefaultTemplate() {
   // 3. Draw Title Box (Beige container with Red Drop Shadow and thick Navy Border)
   // Drop Shadow
   ctx.fillStyle = coralColor;
-  ctx.fillRect(80 + 12, 75 + 12, 800, 180);
+  ctx.fillRect(80 + 12, 75 + 12, 880, 180);
   // Main Rect
   ctx.fillStyle = '#F2EFE6';
-  ctx.fillRect(80, 75, 800, 180);
+  ctx.fillRect(80, 75, 880, 180);
   ctx.strokeStyle = navyColor;
   ctx.lineWidth = 12;
-  ctx.strokeRect(80, 75, 800, 180);
+  ctx.strokeRect(80, 75, 880, 180);
 
   // 4. Draw 5 Section Rows
   const boxX = 270;
