@@ -60,20 +60,6 @@ function generateDefaultTemplate() {
   ctx.lineWidth = 12;
   ctx.strokeRect(80, 75, 800, 180);
 
-  // 3b. Draw Stamp Placeholder Box (Dashed stamp box on the right)
-  // Drop Shadow
-  ctx.fillStyle = coralColor;
-  ctx.fillRect(920 + 12, 75 + 12, 200, 180);
-  // Main Rect (White)
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(920, 75, 200, 180);
-  // Dashed Navy Border
-  ctx.strokeStyle = navyColor;
-  ctx.lineWidth = 4;
-  ctx.setLineDash([8, 8]);
-  ctx.strokeRect(920, 75, 200, 180);
-  ctx.setLineDash([]); // Reset line dash
-
   // 4. Draw 5 Section Rows
   const boxX = 270;
   const boxW = 850;
