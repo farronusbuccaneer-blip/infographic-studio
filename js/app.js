@@ -220,9 +220,8 @@ function renderCanvasBackground() {
     // 1. Draw template background
     ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
 
-    // 2. Render fit-to-box texts with dynamic title width depending on title image presence
-    const hasTitleImg = !!activeTitleImage || canvas.getObjects().some(o => o.isTitleImage);
-    renderTextOnCanvas(ctx, parsed, activeCoords, hasTitleImg);
+    // 2. Render fit-to-box texts
+    renderTextOnCanvas(ctx, parsed, activeCoords);
 
     // 3. Update interactive Fabric canvas background
     const dataUrl = hiddenCanvas.toDataURL('image/png');
@@ -990,10 +989,10 @@ function addTitleImageToCanvas(dataUrl, coordsInfo = null) {
   }
 
   fabric.Image.fromURL(dataUrl, (img) => {
-    const scaleX = originalWidth / 1200;
-    const scaleY = originalHeight / 1500;
+    let scaleX = originalWidth / 1200;
+    let scaleY = originalHeight / 1500;
 
-    let leftPos = 980 * scaleX;
+    let leftPos = 1020 * scaleX; // Center of the dashed stamp placeholder (920 + 100 = 1020)
     let topPos = 165 * scaleY;
     let scaleVal = (160 * scaleY) / img.height; // Fits nicely inside the title box
 

@@ -199,7 +199,7 @@ function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false) {
   // 1. Render Title (Strictly wraps on user explicit newlines only, scales down to fit)
   if (parsedText.title && coords.title) {
     const box = coords.title;
-    const boxW = hasTitleImage ? 720 : box.w; // Narrow to 720px if title image is present
+    const boxW = box.w; // Use the configured coordinate width (720px)
     let s = 60; // Title Font Size basic at 60px
     const minS = 16;
     
