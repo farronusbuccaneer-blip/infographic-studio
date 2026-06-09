@@ -840,9 +840,7 @@ textarea#xml-input:focus {
     margin-bottom: 20px;
   }
 
-  .editor-sidebar.collapsed > *:not(.editor-section-header) {
-    display: none !important;
-  }
+  /* Parent sidebar collapsed rule removed for independent child accordion toggles */
 
   .textarea-container {
     padding: 8px 16px 16px 16px !important;
@@ -1068,5 +1066,26 @@ textarea#xml-input:focus {
   padding-bottom: 0 !important;
   overflow: hidden;
   border-bottom-color: transparent;
+}
+
+/* Text Editor Container Settings UI */
+.text-editor-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  transition: max-height 0.25s ease, padding 0.25s ease;
+  max-height: 500px;
+  overflow: hidden;
+}
+
+.text-editor-container.collapsed {
+  max-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  overflow: hidden;
+}
+
+.text-editor-header {
+  cursor: pointer;
 }
 

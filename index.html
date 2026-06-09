@@ -8,7 +8,7 @@
   <meta name="description" content="XML風タグによるテキスト解析と透過PNG配置を組み合わせた、ブラウザ完結の図解画像生成ツール。SNSやブログ用の定型図解を高速に作成。">
   
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=16">
+  <link rel="stylesheet" href="css/style.css?v=17">
   
   <!-- Font Awesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
@@ -75,25 +75,27 @@
   <main>
     <!-- 1. Text Editor Sidebar (Left) -->
     <section class="editor-sidebar">
-      <div class="editor-section-header">
+      <div class="editor-section-header text-editor-header">
         <span><i class="fa-solid fa-code"></i> テキストコードエディタ</span>
-        <i class="fa-solid fa-chevron-up toggle-chevron mobile-only" style="margin-left: auto;"></i>
+        <i class="fa-solid fa-chevron-up toggle-chevron" style="margin-left: auto;"></i>
         <button id="btn-reset-text" class="shortcut-btn" title="デフォルト文面に戻す" style="margin-left: 10px;"><i class="fa-solid fa-rotate-left"></i></button>
       </div>
-
-      <!-- Quick Tag Insert Tools -->
-      <div class="xml-shortcuts">
-        <button class="shortcut-btn" data-tag="title" title="タイトルタグの挿入">&lt;title&gt;</button>
-        <button class="shortcut-btn" data-tag="section" title="セクションタグの挿入">&lt;section1&gt;</button>
-        <button class="shortcut-btn" data-tag="row1" title="Row 1 (大見出し)">&lt;row1&gt;</button>
-        <button class="shortcut-btn" data-tag="row2" title="Row 2 (説明文)">&lt;row2&gt;</button>
-        <button class="shortcut-btn" data-tag="row3" title="Row 3 (補足文)">&lt;row3&gt;</button>
-        <button id="btn-clear-text" class="shortcut-btn" style="background: rgba(239,68,68,0.1); color: var(--danger-color); border-color: rgba(239,68,68,0.2);" title="エディタをクリア"><i class="fa-solid fa-eraser"></i> クリア</button>
-      </div>
-
-      <!-- Textarea Container -->
-      <div class="textarea-container">
-        <textarea id="xml-input" placeholder="ここにXMLタグを入力してください..." spellcheck="false"></textarea>
+ 
+      <div class="text-editor-container">
+        <!-- Quick Tag Insert Tools -->
+        <div class="xml-shortcuts">
+          <button class="shortcut-btn" data-tag="title" title="タイトルタグの挿入">&lt;title&gt;</button>
+          <button class="shortcut-btn" data-tag="section" title="セクションタグの挿入">&lt;section1&gt;</button>
+          <button class="shortcut-btn" data-tag="row1" title="Row 1 (大見出し)">&lt;row1&gt;</button>
+          <button class="shortcut-btn" data-tag="row2" title="Row 2 (説明文)">&lt;row2&gt;</button>
+          <button class="shortcut-btn" data-tag="row3" title="Row 3 (補足文)">&lt;row3&gt;</button>
+          <button id="btn-clear-text" class="shortcut-btn" style="background: rgba(239,68,68,0.1); color: var(--danger-color); border-color: rgba(239,68,68,0.2);" title="エディタをクリア"><i class="fa-solid fa-eraser"></i> クリア</button>
+        </div>
+ 
+        <!-- Textarea Container -->
+        <div class="textarea-container">
+          <textarea id="xml-input" placeholder="ここにXMLタグを入力してください..." spellcheck="false"></textarea>
+        </div>
       </div>
 
       <!-- Title Image Settings -->
@@ -284,9 +286,9 @@
   </div>
 
   <!-- Code Scripts -->
-  <script src="js/db.js?v=16"></script>
-  <script src="js/config.js?v=16"></script>
-  <script src="js/text-engine.js?v=16"></script>
-  <script src="js/app.js?v=16"></script>
+  <script src="js/db.js?v=17"></script>
+  <script src="js/config.js?v=17"></script>
+  <script src="js/text-engine.js?v=17"></script>
+  <script src="js/app.js?v=17"></script>
 </body>
 </html>

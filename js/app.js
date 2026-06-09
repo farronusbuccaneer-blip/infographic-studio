@@ -883,35 +883,83 @@ function initCollapsibleSections() {
   const paneTemplates = document.getElementById('pane-templates');
   const paneOverlays = document.getElementById('pane-overlays');
 
-  const toggleSection = (element) => {
+  // Accordion toggle helper for left sidebar (PC & Mobile unified)
+  const toggleAccordion = (header, container) => {
+    container.classList.toggle('collapsed');
+    const isCollapsed = container.classList.contains('collapsed');
+    const chevron = header.querySelector('.toggle-chevron');
+    if (chevron) {
+      chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+    // Re-fit canvas dynamically based on viewport height updates after collapse toggle
     if (window.innerWidth <= 768) {
-      element.classList.toggle('collapsed');
-      // Re-fit canvas dynamically based on viewport height updates after collapse toggle
       fitCanvasToWorkspace();
     }
   };
 
-  // Bind click events to headers
-  const leftHeader = leftSidebar.querySelector('.editor-section-header');
-  if (leftHeader) {
-    leftHeader.onclick = () => toggleSection(leftSidebar);
+  // 1. Text Editor Accordion
+  const textEditorHeader = leftSidebar.querySelector('.text-editor-header');
+  const textEditorContainer = leftSidebar.querySelector('.text-editor-container');
+  if (textEditorHeader && textEditorContainer) {
+    textEditorHeader.onclick = () => toggleAccordion(textEditorHeader, textEditorContainer);
   }
+
+  // 2. Title Image Settings Accordion
+  const titleImageHeader = leftSidebar.querySelector('.title-image-header');
+  const titleImageContainer = leftSidebar.querySelector('.title-image-container');
+  if (titleImageHeader && titleImageContainer) {
+    titleImageHeader.onclick = () => toggleAccordion(titleImageHeader, titleImageContainer);
+  }
+
+  // 3. Section Images Settings Accordion
+  const secImagesHeader = leftSidebar.querySelector('.sec-images-header');
+  const secImagesContainer = leftSidebar.querySelector('.section-images-container');
+  if (secImagesHeader && secImagesContainer) {
+    secImagesHeader.onclick = () => toggleAccordion(secImagesHeader, secImagesContainer);
+  }
+
+  // Right assets panel toggle (Mobile only)
+  const toggleAssetSection = (element) => {
+    if (window.innerWidth <= 768) {
+      element.classList.toggle('collapsed');
+      fitCanvasToWorkspace();
+    }
+  };
 
   const templatesHeader = paneTemplates.querySelector('.editor-section-header');
   if (templatesHeader) {
-    templatesHeader.onclick = () => toggleSection(paneTemplates);
+    templatesHeader.onclick = () => toggleAssetSection(paneTemplates);
   }
 
   const overlaysHeader = paneOverlays.querySelector('.editor-section-header');
   if (overlaysHeader) {
-    overlaysHeader.onclick = () => toggleSection(paneOverlays);
+    overlaysHeader.onclick = () => toggleAssetSection(paneOverlays);
   }
 
-  // Setup initial load collapsed states for mobile
+  // Setup initial load collapsed states
   if (window.innerWidth <= 768) {
-    leftSidebar.classList.add('collapsed');
+    // Mobile: Collapse all sections by default
+    if (textEditorContainer) textEditorContainer.classList.add('collapsed');
+    if (titleImageContainer) titleImageContainer.classList.add('collapsed');
+    if (secImagesContainer) secImagesContainer.classList.add('collapsed');
+    
+    // Rotate all mobile chevrons
+    document.querySelectorAll('.editor-sidebar .toggle-chevron').forEach(ch => {
+      ch.style.transform = 'rotate(180deg)';
+    });
+
     paneTemplates.classList.add('collapsed');
     paneOverlays.classList.add('collapsed');
+  } else {
+    // PC: Keep editor open, collapse image settings
+    if (titleImageContainer) titleImageContainer.classList.add('collapsed');
+    if (secImagesContainer) secImagesContainer.classList.add('collapsed');
+
+    // Rotate PC chevrons for image panels
+    const tChevron = titleImageHeader ? titleImageHeader.querySelector('.toggle-chevron') : null;
+    const sChevron = secImagesHeader ? secImagesHeader.querySelector('.toggle-chevron') : null;
+    if (tChevron) tChevron.style.transform = 'rotate(180deg)';
+    if (sChevron) sChevron.style.transform = 'rotate(180deg)';
   }
 }
 
@@ -1344,21 +1392,6 @@ function initSectionImagesUI() {
     };
   });
 
-  // Accordion toggle logic
-  const secImagesHeader = document.querySelector('.sec-images-header');
-  const secImagesContainer = document.querySelector('.section-images-container');
-  if (secImagesHeader && secImagesContainer) {
-    // Start collapsed by default to save vertical space
-    secImagesContainer.classList.add('collapsed');
-    secImagesHeader.querySelector('.toggle-chevron').style.transform = 'rotate(180deg)';
-    
-    secImagesHeader.onclick = () => {
-      secImagesContainer.classList.toggle('collapsed');
-      const isCollapsed = secImagesContainer.classList.contains('collapsed');
-      secImagesHeader.querySelector('.toggle-chevron').style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
-    };
-  }
-
   // --- Title Image UI Bindings ---
   const btnSelectTitle = document.querySelector('.btn-select-title-image');
   if (btnSelectTitle) {
@@ -1381,21 +1414,6 @@ function initSectionImagesUI() {
       saveTitleImageToDb();
       showToast('タイトル画像を削除しました', 'warning');
       triggerRenderDebounced(); // Redraw text to fill back wide layout
-    };
-  }
-
-  // Accordion toggle logic for Title Image
-  const titleImageHeader = document.querySelector('.title-image-header');
-  const titleImageContainer = document.querySelector('.title-image-container');
-  if (titleImageHeader && titleImageContainer) {
-    // Start collapsed by default to save vertical space
-    titleImageContainer.classList.add('collapsed');
-    titleImageHeader.querySelector('.toggle-chevron').style.transform = 'rotate(180deg)';
-    
-    titleImageHeader.onclick = () => {
-      titleImageContainer.classList.toggle('collapsed');
-      const isCollapsed = titleImageContainer.classList.contains('collapsed');
-      titleImageHeader.querySelector('.toggle-chevron').style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
     };
   }
 }
