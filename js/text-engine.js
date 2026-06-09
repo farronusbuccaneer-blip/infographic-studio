@@ -183,7 +183,7 @@ function wrapStyledText(ctx, tokensArray, maxWidth) {
  * Performs dynamic fit-to-box rendering on the target canvas context.
  * Adjusts font sizes iteratively to ensure all text fits inside their boxes.
  */
-function renderTextOnCanvas(ctx, parsedText, coords) {
+function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false) {
   const fontFam = "'Segoe UI', 'Noto Sans JP', sans-serif";
   ctx.textBaseline = 'top';
 
@@ -199,6 +199,7 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
   // 1. Render Title (Strictly wraps on user explicit newlines only, scales down to fit)
   if (parsedText.title && coords.title) {
     const box = coords.title;
+    const boxW = hasTitleImage ? 720 : box.w; // Narrow to 720px if title image is present
     let s = 60; // Title Font Size basic at 60px
     const minS = 16;
     
@@ -213,7 +214,7 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
       let allLinesFit = true;
       for (let i = 0; i < titleLines.length; i++) {
         const lineStr = titleLines[i].map(t => t.char).join('');
-        if (ctx.measureText(lineStr).width > box.w) {
+        if (ctx.measureText(lineStr).width > boxW) {
           allLinesFit = false;
           break;
         }
@@ -239,7 +240,7 @@ function renderTextOnCanvas(ctx, parsedText, coords) {
       const lineStr = line.map(t => t.char).join('');
       const lineWidth = ctx.measureText(lineStr).width;
       
-      let currentX = box.x + (box.w - lineWidth) / 2;
+      let currentX = box.x + (boxW - lineWidth) / 2;
       const currentY = titleStartY + index * (s * 1.35);
 
       line.forEach(token => {

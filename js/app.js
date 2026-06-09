@@ -13,6 +13,7 @@ let textRenderDebounceTimer = null;
 
 // Section Images State
 let activeSectionImages = Array.from({ length: 5 }, () => null);
+let activeTitleImage = null;
 let selectingSectionIndex = null;
 
 // DOM Elements
@@ -160,30 +161,41 @@ function initFabricCanvas() {
         return;
       }
       const active = canvas.getActiveObject();
-      // Don't delete bounding boxes, but allow deleting section images
-      if (active && active.name !== 'title' && (!active.name?.startsWith('section') || active.isSectionImage)) {
+      // Don't delete bounding boxes, but allow deleting section/title images
+      if (active && ((active.name !== 'title' && !active.name?.startsWith('section')) || active.isSectionImage || active.isTitleImage)) {
         canvas.remove(active);
         canvas.discardActiveObject();
         canvas.renderAll();
-        showToast(active.isSectionImage ? 'セクション画像を削除しました' : 'スタンプを削除しました');
+        showToast(active.isSectionImage ? 'セクション画像を削除しました' : (active.isTitleImage ? 'タイトル画像を削除しました' : 'スタンプを削除しました'));
       }
     }
   });
 
-  // Auto-save coordinate changes when section images are modified
+  // Auto-save coordinate changes when section or title images are modified
   canvas.on('object:modified', (e) => {
-    if (e.target && e.target.isSectionImage) {
-      saveSectionImagesToDb();
+    if (e.target) {
+      if (e.target.isSectionImage) {
+        saveSectionImagesToDb();
+      } else if (e.target.isTitleImage) {
+        saveTitleImageToDb();
+      }
     }
   });
 
-  // Auto-update UI and save state when section images are removed
+  // Auto-update UI and save state when section or title images are removed
   canvas.on('object:removed', (e) => {
-    if (e.target && e.target.isSectionImage) {
-      const idx = e.target.sectionIndex;
-      activeSectionImages[idx] = null;
-      updateSectionImageUI(idx, null);
-      saveSectionImagesToDb();
+    if (e.target) {
+      if (e.target.isSectionImage) {
+        const idx = e.target.sectionIndex;
+        activeSectionImages[idx] = null;
+        updateSectionImageUI(idx, null);
+        saveSectionImagesToDb();
+      } else if (e.target.isTitleImage) {
+        activeTitleImage = null;
+        updateTitleImageUI(null);
+        saveTitleImageToDb();
+        triggerRenderDebounced(); // Redraw text to fill back wide layout
+      }
     }
   });
 }
@@ -208,8 +220,9 @@ function renderCanvasBackground() {
     // 1. Draw template background
     ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
 
-    // 2. Render fit-to-box texts
-    renderTextOnCanvas(ctx, parsed, activeCoords);
+    // 2. Render fit-to-box texts with dynamic title width depending on title image presence
+    const hasTitleImg = !!activeTitleImage || canvas.getObjects().some(o => o.isTitleImage);
+    renderTextOnCanvas(ctx, parsed, activeCoords, hasTitleImg);
 
     // 3. Update interactive Fabric canvas background
     const dataUrl = hiddenCanvas.toDataURL('image/png');
@@ -368,6 +381,7 @@ async function selectTemplate(id) {
     // Set background and zoom
     fitCanvasToWorkspace();
     renderCanvasBackground();
+    await loadTitleImageFromDb();
     await loadSectionImagesFromDb();
     loadTemplatesGrid();
     showToast(`背景を「${t.name}」に変更しました`);
@@ -462,7 +476,7 @@ function downloadGraphic() {
     const overlays = canvas.getObjects();
     
     overlays.forEach(overlay => {
-      if (overlay.name === 'title' || (overlay.name?.startsWith('section') && !overlay.isSectionImage)) return;
+      if ((overlay.name === 'title' && !overlay.isTitleImage) || (overlay.name?.startsWith('section') && !overlay.isSectionImage)) return;
       if (!overlay._element) return;
 
       ctx.save();
@@ -942,7 +956,10 @@ function addSectionImageToCanvas(index, dataUrl, coordsInfo = null) {
       borderColor: '#6366F1',
       lockUniScaling: true,
       uniformScaling: true,
-      hasRotatingPoint: false
+      hasRotatingPoint: false,
+      lockMovementX: true,      // Lock position movement (X)
+      lockMovementY: true,      // Lock position movement (Y)
+      centeredScaling: true     // Keep center fixed when resizing
     });
 
     img.setControlsVisibility({
@@ -960,6 +977,181 @@ function addSectionImageToCanvas(index, dataUrl, coordsInfo = null) {
     updateSectionImageUI(index, dataUrl);
     saveSectionImagesToDb();
   });
+}
+
+/**
+ * Add Stamp Overlay Image to Canvas specifically for the title right area
+ */
+function addTitleImageToCanvas(dataUrl, coordsInfo = null) {
+  // Remove existing title image
+  const existing = canvas.getObjects().find(o => o.isTitleImage);
+  if (existing) {
+    canvas.remove(existing);
+  }
+
+  fabric.Image.fromURL(dataUrl, (img) => {
+    const scaleX = originalWidth / 1200;
+    const scaleY = originalHeight / 1500;
+
+    let leftPos = 980 * scaleX;
+    let topPos = 165 * scaleY;
+    let scaleVal = (160 * scaleY) / img.height; // Fits nicely inside the title box
+
+    if (coordsInfo) {
+      leftPos = coordsInfo.left;
+      topPos = coordsInfo.top;
+      scaleVal = coordsInfo.scaleX;
+    }
+
+    img.set({
+      name: 'title-image',
+      isTitleImage: true,
+      left: leftPos,
+      top: topPos,
+      scaleX: scaleVal,
+      scaleY: scaleVal,
+      originX: 'center',
+      originY: 'center',
+      cornerColor: '#6366F1',
+      cornerSize: 12,
+      transparentCorners: false,
+      borderColor: '#6366F1',
+      lockUniScaling: true,
+      uniformScaling: true,
+      hasRotatingPoint: false,
+      lockMovementX: true,      // Lock position movement (X)
+      lockMovementY: true,      // Lock position movement (Y)
+      centeredScaling: true     // Keep center fixed when resizing
+    });
+
+    img.setControlsVisibility({
+      mt: false,
+      mb: false,
+      ml: false,
+      mr: false,
+      mtr: false
+    });
+
+    canvas.add(img);
+    activeTitleImage = img;
+    canvas.renderAll();
+
+    updateTitleImageUI(dataUrl);
+    saveTitleImageToDb();
+
+    // Redraw text to apply narrowed width
+    triggerRenderDebounced();
+  });
+}
+
+/**
+ * Update the UI Preview for the title image
+ */
+function updateTitleImageUI(dataUrl) {
+  const preview = document.getElementById('title-img-preview');
+  const btnSelect = document.querySelector('.btn-select-title-image');
+  
+  if (preview && btnSelect) {
+    if (dataUrl) {
+      preview.querySelector('img').src = dataUrl;
+      preview.style.display = 'flex';
+      btnSelect.style.display = 'none';
+    } else {
+      preview.style.display = 'none';
+      btnSelect.style.display = 'inline-flex';
+    }
+  }
+}
+
+/**
+ * Save active title image configuration to IndexedDB configs
+ */
+async function saveTitleImageToDb() {
+  if (!activeTemplate) return;
+  
+  let savedImageData = null;
+  const currentImg = canvas.getObjects().find(o => o.isTitleImage);
+  
+  if (currentImg) {
+    savedImageData = {
+      data_url: currentImg._element.src,
+      left: currentImg.left,
+      top: currentImg.top,
+      scaleX: currentImg.scaleX,
+      scaleY: currentImg.scaleY
+    };
+  }
+
+  let config = await db.configs.get(activeTemplate.id);
+  if (!config) {
+    config = {
+      template_id: activeTemplate.id,
+      title: activeCoords.title,
+      sections: activeCoords.sections
+    };
+  }
+  config.title_image = savedImageData;
+  await db.configs.put(config);
+}
+
+/**
+ * Load and render title image configuration from IndexedDB
+ */
+async function loadTitleImageFromDb() {
+  // Clear existing title image on canvas
+  const existing = canvas.getObjects().find(o => o.isTitleImage);
+  if (existing) {
+    canvas.remove(existing);
+  }
+  activeTitleImage = null;
+
+  // Clear UI Preview
+  updateTitleImageUI(null);
+
+  if (!activeTemplate) return;
+
+  const config = await db.configs.get(activeTemplate.id);
+  if (config && config.title_image) {
+    const imgData = config.title_image;
+    await new Promise((resolve) => {
+      fabric.Image.fromURL(imgData.data_url, (img) => {
+        img.set({
+          name: 'title-image',
+          isTitleImage: true,
+          left: imgData.left,
+          top: imgData.top,
+          scaleX: imgData.scaleX,
+          scaleY: imgData.scaleY,
+          originX: 'center',
+          originY: 'center',
+          cornerColor: '#6366F1',
+          cornerSize: 12,
+          transparentCorners: false,
+          borderColor: '#6366F1',
+          lockUniScaling: true,
+          uniformScaling: true,
+          hasRotatingPoint: false,
+          lockMovementX: true,
+          lockMovementY: true,
+          centeredScaling: true
+        });
+
+        img.setControlsVisibility({
+          mt: false,
+          mb: false,
+          ml: false,
+          mr: false,
+          mtr: false
+        });
+
+        canvas.add(img);
+        activeTitleImage = img;
+        updateTitleImageUI(imgData.data_url);
+        resolve();
+      });
+    });
+    canvas.renderAll();
+  }
 }
 
 /**
@@ -1095,7 +1287,9 @@ async function openSelectOverlayModal() {
       card.appendChild(img);
       
       card.onclick = () => {
-        if (selectingSectionIndex !== null) {
+        if (selectingSectionIndex === 'title') {
+          addTitleImageToCanvas(o.data_url);
+        } else if (selectingSectionIndex !== null) {
           addSectionImageToCanvas(selectingSectionIndex, o.data_url);
         }
         closeSelectOverlayModal();
@@ -1120,6 +1314,7 @@ function closeSelectOverlayModal() {
  * Initialize section image configurations UI event listeners
  */
 function initSectionImagesUI() {
+  // --- Section Images UI Bindings ---
   // Bind Select button click
   document.querySelectorAll('.btn-select-sec-image').forEach(btn => {
     btn.onclick = () => {
@@ -1162,6 +1357,46 @@ function initSectionImagesUI() {
       secImagesContainer.classList.toggle('collapsed');
       const isCollapsed = secImagesContainer.classList.contains('collapsed');
       secImagesHeader.querySelector('.toggle-chevron').style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+    };
+  }
+
+  // --- Title Image UI Bindings ---
+  const btnSelectTitle = document.querySelector('.btn-select-title-image');
+  if (btnSelectTitle) {
+    btnSelectTitle.onclick = () => {
+      selectingSectionIndex = 'title';
+      openSelectOverlayModal();
+    };
+  }
+
+  const btnClearTitle = document.querySelector('.btn-clear-title-image');
+  if (btnClearTitle) {
+    btnClearTitle.onclick = () => {
+      const obj = activeTitleImage;
+      if (obj) {
+        canvas.remove(obj);
+        canvas.renderAll();
+      }
+      activeTitleImage = null;
+      updateTitleImageUI(null);
+      saveTitleImageToDb();
+      showToast('タイトル画像を削除しました', 'warning');
+      triggerRenderDebounced(); // Redraw text to fill back wide layout
+    };
+  }
+
+  // Accordion toggle logic for Title Image
+  const titleImageHeader = document.querySelector('.title-image-header');
+  const titleImageContainer = document.querySelector('.title-image-container');
+  if (titleImageHeader && titleImageContainer) {
+    // Start collapsed by default to save vertical space
+    titleImageContainer.classList.add('collapsed');
+    titleImageHeader.querySelector('.toggle-chevron').style.transform = 'rotate(180deg)';
+    
+    titleImageHeader.onclick = () => {
+      titleImageContainer.classList.toggle('collapsed');
+      const isCollapsed = titleImageContainer.classList.contains('collapsed');
+      titleImageHeader.querySelector('.toggle-chevron').style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
     };
   }
 }

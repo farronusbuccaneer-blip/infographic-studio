@@ -8,7 +8,7 @@
   <meta name="description" content="XML風タグによるテキスト解析と透過PNG配置を組み合わせた、ブラウザ完結の図解画像生成ツール。SNSやブログ用の定型図解を高速に作成。">
   
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="stylesheet" href="css/style.css?v=12">
   
   <!-- Font Awesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
@@ -94,6 +94,22 @@
       <!-- Textarea Container -->
       <div class="textarea-container">
         <textarea id="xml-input" placeholder="ここにXMLタグを入力してください..." spellcheck="false"></textarea>
+      </div>
+
+      <!-- Title Image Settings -->
+      <div class="editor-section-header title-image-header">
+        <span><i class="fa-solid fa-heading"></i> タイトル画像設定</span>
+        <i class="fa-solid fa-chevron-up toggle-chevron" style="margin-left: auto;"></i>
+      </div>
+      <div class="title-image-container">
+        <div class="section-image-row">
+          <span class="row-label">タイトルの右画像:</span>
+          <button class="btn btn-sm btn-select-title-image"><i class="fa-solid fa-file-image"></i> 設定</button>
+          <div class="sec-img-preview" id="title-img-preview" style="display: none;">
+            <img src="" alt="preview">
+            <button class="btn-clear-title-image" title="画像を削除"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
       </div>
 
       <!-- Section Images Settings -->
@@ -268,9 +284,9 @@
   </div>
 
   <!-- Code Scripts -->
-  <script src="js/db.js?v=11"></script>
-  <script src="js/config.js?v=11"></script>
-  <script src="js/text-engine.js?v=11"></script>
-  <script src="js/app.js?v=11"></script>
+  <script src="js/db.js?v=12"></script>
+  <script src="js/config.js?v=12"></script>
+  <script src="js/text-engine.js?v=12"></script>
+  <script src="js/app.js?v=12"></script>
 </body>
 </html>
