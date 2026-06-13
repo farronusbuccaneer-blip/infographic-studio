@@ -8,7 +8,7 @@ let activeTemplate = null;
 let activeCoords = null;
 let zoomRatio = 1.0;
 let originalWidth = 1200;
-let originalHeight = 1500;
+let originalHeight = 1600;
 let textRenderDebounceTimer = null;
 
 // Section Images State
@@ -69,7 +69,7 @@ function showToast(message, type = 'success') {
  * Initialize Default Assets in IndexedDB on first load
  */
 async function initializeDefaultAssets() {
-  // 1. Templates (Always put/overwrite the system default standard template to keep it updated with the 4:5 aspect ratio)
+  // 1. Templates (Always put/overwrite the system default standard template to keep it updated with the 3:4 aspect ratio)
   const defaultDataUrl = generateDefaultTemplate();
   const defaultTemplate = {
     id: DEFAULT_TEMPLATE_ID,
@@ -975,10 +975,10 @@ function addSectionImageToCanvas(index, dataUrl, coordsInfo = null) {
 
   fabric.Image.fromURL(dataUrl, (img) => {
     const scaleX = originalWidth / 1200;
-    const scaleY = originalHeight / 1500;
+    const scaleY = originalHeight / 1600;
 
     let leftPos = 1060 * scaleX;
-    let topPos = (335 + index * 210 + 80) * scaleY;
+    let topPos = (345 + index * 225 + 85) * scaleY;
     let scaleVal = (100 * scaleX) / img.width; // Fits nicely
 
     if (coordsInfo) {
@@ -1038,7 +1038,7 @@ function addTitleImageToCanvas(dataUrl, coordsInfo = null) {
 
   fabric.Image.fromURL(dataUrl, (img) => {
     let scaleX = originalWidth / 1200;
-    let scaleY = originalHeight / 1500;
+    let scaleY = originalHeight / 1600;
 
     let leftPos = 1060 * scaleX; // Center of the narrowed stamp area shifted right (960 + 100 = 1060)
     let topPos = 165 * scaleY;

@@ -10,11 +10,11 @@ const DEFAULT_TEMPLATE_ID = 'default-template';
 const DEFAULT_COORDS = {
   title: { x: 120, y: 95, w: 800, h: 140 },
   sections: [
-    { x: 290, y: 350, w: 700, h: 130 },
-    { x: 290, y: 560, w: 700, h: 130 },
-    { x: 290, y: 770, w: 700, h: 130 },
-    { x: 290, y: 980, w: 700, h: 130 },
-    { x: 290, y: 1190, w: 700, h: 130 }
+    { x: 290, y: 360, w: 700, h: 140 },
+    { x: 290, y: 585, w: 700, h: 140 },
+    { x: 290, y: 810, w: 700, h: 140 },
+    { x: 290, y: 1035, w: 700, h: 140 },
+    { x: 290, y: 1260, w: 700, h: 140 }
   ]
 };
 
@@ -28,7 +28,7 @@ const DEFAULT_XML_TEXT = ``;
 function generateDefaultTemplate() {
   const canvas = document.createElement('canvas');
   canvas.width = 1200;
-  canvas.height = 1500;
+  canvas.height = 1600;
   const ctx = canvas.getContext('2d');
 
   // 1. Draw Cream Background
@@ -63,10 +63,10 @@ function generateDefaultTemplate() {
   // 4. Draw 5 Section Rows
   const boxX = 270;
   const boxW = 850;
-  const boxH = 160;
+  const boxH = 170;
   
   for (let i = 0; i < 5; i++) {
-    const boxY = 335 + i * 210;
+    const boxY = 345 + i * 225;
 
     // White Text Container Box
     ctx.fillStyle = '#FFFFFF';
@@ -77,7 +77,7 @@ function generateDefaultTemplate() {
 
     // Circle for Number
     const circleX = 100;
-    const circleY = boxY + 80;
+    const circleY = boxY + 85;
     const circleRadius = 34;
     
     ctx.beginPath();
@@ -94,7 +94,7 @@ function generateDefaultTemplate() {
 
     // Checkbox Box
     const checkX = 180;
-    const checkY = boxY + 56;
+    const checkY = boxY + 61;
     const checkW = 50;
     const checkH = 47;
 
@@ -118,8 +118,8 @@ function generateDefaultTemplate() {
 
   // 5. Draw Bottom Horizontal Accent Line
   ctx.beginPath();
-  ctx.moveTo(80, 1425);
-  ctx.lineTo(1120, 1425);
+  ctx.moveTo(80, 1520);
+  ctx.lineTo(1120, 1520);
   ctx.strokeStyle = navyColor;
   ctx.lineWidth = 6;
   ctx.lineCap = 'round';
@@ -134,7 +134,7 @@ function generateDefaultTemplate() {
  */
 function getScaledCoords(targetWidth, targetHeight) {
   const scaleX = targetWidth / 1200;
-  const scaleY = targetHeight / 1500;
+  const scaleY = targetHeight / 1600;
 
   return {
     title: {

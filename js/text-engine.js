@@ -392,14 +392,14 @@ function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false) {
   // 3. Render Footer (Branding & Bookmark CTA)
   // Scale footer relative to active template resolution
   const scaleX = originalWidth / 1200;
-  const scaleY = originalHeight / 1500;
+  const scaleY = originalHeight / 1600;
   const footerS = Math.round(28 * Math.min(scaleX, scaleY));
   
   ctx.font = `bold ${footerS}px ${fontFam}`;
   ctx.fillStyle = '#1E314B'; // Navy color matches template border
   ctx.textBaseline = 'middle';
   
-  const footerY = 1458 * scaleY; // Vertical center of the footer space (line is at 1425)
+  const footerY = 1560 * scaleY; // Vertical center of the footer space (line is at 1520)
 
   // Bottom Left: @farron_us
   ctx.textAlign = 'left';
