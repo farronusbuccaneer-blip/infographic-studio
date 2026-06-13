@@ -979,7 +979,7 @@ function addSectionImageToCanvas(index, dataUrl, coordsInfo = null) {
 
     let leftPos = 1060 * scaleX;
     let topPos = (345 + index * 225 + 85) * scaleY;
-    let scaleVal = (100 * scaleX) / img.width; // Fits nicely
+    let scaleVal = (140 * scaleX) / img.width; // Fits nicely (matches the stamp size)
 
     if (coordsInfo) {
       leftPos = coordsInfo.left;
