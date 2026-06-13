@@ -1042,7 +1042,7 @@ function addTitleImageToCanvas(dataUrl, coordsInfo = null) {
 
     let leftPos = 1060 * scaleX; // Center of the narrowed stamp area shifted right (960 + 100 = 1060)
     let topPos = 165 * scaleY;
-    let scaleVal = (160 * scaleY) / img.height; // Fits nicely inside the title box
+    let scaleVal = (200 * scaleY) / img.height; // Fits nicely in the title right area (matches the stamp size)
 
     if (coordsInfo) {
       leftPos = coordsInfo.left;
