@@ -1802,22 +1802,25 @@ function drawFabricObjectsOnRecordingCanvas(ctx, scaleX, scaleY) {
 }
 
 /**
- * Draw Down Arrow (↓) for Pattern B
+ * Draw a rotated Arrow icon (defaults pointing Upwards, rotated by angleDegrees)
  */
-function drawDownArrowIcon(ctx, x, y, size) {
+function drawRotatedArrowIcon(ctx, x, y, size, angleDegrees) {
   ctx.save();
   ctx.fillStyle = '#D3544C'; // Coral red
+  
+  ctx.translate(x, y);
+  ctx.rotate(angleDegrees * Math.PI / 180);
   
   // Arrow line/shaft
   const shaftW = size * 0.24;
   const shaftH = size * 0.45;
-  ctx.fillRect(x - shaftW / 2, y - size * 0.15, shaftW, shaftH);
+  ctx.fillRect(-shaftW / 2, -size * 0.15, shaftW, shaftH);
   
-  // Arrow head (triangle)
+  // Arrow head (triangle pointing Upwards relative to local coordinate system)
   ctx.beginPath();
-  ctx.moveTo(x - size * 0.45, y + size * 0.25);
-  ctx.lineTo(x + size * 0.45, y + size * 0.25);
-  ctx.lineTo(x, y + size * 0.7);
+  ctx.moveTo(-size * 0.45, -size * 0.15);
+  ctx.lineTo(size * 0.45, -size * 0.15);
+  ctx.lineTo(0, -size * 0.6);
   ctx.closePath();
   ctx.fill();
   
@@ -1933,7 +1936,13 @@ async function exportVideo(layoutType) {
       
       // Clean filename based on XML title
       let cleanTitle = (parsedText.title || '').replace(/<[^>]*>/g, '').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_').trim();
-      const filename = cleanTitle ? `${cleanTitle}_${layoutType.replace(':', '')}.mp4` : `video_${Date.now()}_${layoutType.replace(':', '')}.mp4`;
+      
+      let suffix = '';
+      if (layoutType === '3:4') suffix = '_34';
+      else if (layoutType === '9:16-A') suffix = '_youtube';
+      else if (layoutType === '9:16-B') suffix = '_insta';
+
+      const filename = cleanTitle ? `${cleanTitle}${suffix}.mp4` : `video_${Date.now()}${suffix}.mp4`;
 
       const a = document.createElement('a');
       a.href = url;
@@ -2021,13 +2030,12 @@ async function exportVideo(layoutType) {
           // Pattern B
           ctx.fillText('使いたい表現をコメントしてください！', 600, 133);
           
-          // Center-left aligned to leave space for the arrow
-          ctx.textAlign = 'left';
-          ctx.fillText('復習できるように今すぐ保存', 80, 2000);
+          // Centered text
+          ctx.fillText('復習できるように今すぐ保存', 600, 2000);
           
-          // Draw Red Down Arrow on bottom-right (Instagram Bookmark overlay area)
-          // X: 1100, Y: 2000, Size: 64px
-          drawDownArrowIcon(ctx, 1100, 2000, 64);
+          // Draw Red Arrow pointing Up-Right (↗) on bottom-right (Instagram Bookmark overlay area)
+          // X: 1100, Y: 2000, Size: 64px, Rotated 45 degrees
+          drawRotatedArrowIcon(ctx, 1100, 2000, 64, 45);
         }
 
         // Draw @farron_us at the very bottom right of the black canvas
