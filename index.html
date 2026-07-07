@@ -8,7 +8,7 @@
   <meta name="description" content="XML風タグによるテキスト解析と透過PNG配置を組み合わせた、ブラウザ完結の図解画像生成ツール。SNSやブログ用の定型図解を高速に作成。">
   
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=20">
+  <link rel="stylesheet" href="css/style.css?v=21">
   
   <!-- Font Awesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
@@ -161,6 +161,53 @@
           </div>
         </div>
       </div>
+
+      <!-- Audio & Video Settings Accordion -->
+      <div class="editor-section-header audio-video-header">
+        <span><i class="fa-solid fa-video"></i> 音声・動画出力設定</span>
+        <i class="fa-solid fa-chevron-up toggle-chevron" style="margin-left: auto;"></i>
+      </div>
+      <div class="audio-video-container collapsed">
+        <div class="audio-upload-row">
+          <label class="audio-upload-zone" id="upload-audio-zone">
+            <i class="fa-solid fa-file-audio"></i>
+            <strong>音声ファイル(MP3)の選択</strong>
+            <span>クリックまたはドロップ</span>
+            <input type="file" id="input-audio-file" accept="audio/mp3, audio/*">
+          </label>
+        </div>
+        <div id="audio-player-preview" style="display: none; margin-top: 10px;">
+          <div class="audio-info" style="font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 5px; color: var(--text-secondary);">
+            <i class="fa-solid fa-music" style="color: var(--accent-color);"></i>
+            <span id="audio-filename" style="word-break: break-all; font-weight: 500;">filename.mp3</span>
+          </div>
+          <audio id="preview-audio-el" controls style="width: 100%; height: 32px; outline: none;"></audio>
+        </div>
+        <div class="timestamp-section" style="margin-top: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <span class="row-label" style="font-weight: 500; font-size: 13px;">タイムスタンプ設定:</span>
+            <button id="btn-detect-silence" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 2px 6px;" title="音声からタイムスタンプを自動検出します" disabled>
+              <i class="fa-solid fa-wand-magic-sparkles"></i> 音声から自動検出
+            </button>
+          </div>
+          <textarea id="timestamp-input" placeholder="例:&#10;00:00 タイトル&#10;00:02 セクション1&#10;00:07 セクション2" style="width: 100%; height: 100px; resize: vertical; font-family: monospace; font-size: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary); outline: none;" spellcheck="false"></textarea>
+          <button id="btn-generate-timestamp-template" class="btn btn-sm btn-secondary" style="margin-top: 6px; width: 100%; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+            <i class="fa-solid fa-list-check"></i> 構成から雛形を自動生成
+          </button>
+        </div>
+        <div class="video-export-section" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+          <span class="row-label" style="font-weight: 500; font-size: 13px; display: block; margin-bottom: 8px;">動画ファイルの書き出し:</span>
+          <button id="btn-export-video-34" class="btn btn-primary export-video-btn" style="width: 100%; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;" disabled>
+            <i class="fa-solid fa-file-video"></i> 3:4 動画を書き出す (3:4)
+          </button>
+          <button id="btn-export-video-916a" class="btn btn-primary export-video-btn" style="width: 100%; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;" disabled>
+            <i class="fa-solid fa-film"></i> 9:16 パターンA (登録・高評価)
+          </button>
+          <button id="btn-export-video-916b" class="btn btn-primary export-video-btn" style="width: 100%; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;" disabled>
+            <i class="fa-solid fa-film"></i> 9:16 パターンB (保存・↓矢印)
+          </button>
+        </div>
+      </div>
     </section>
 
     <!-- 2. Interactive Canvas Workspace (Center) -->
@@ -262,6 +309,30 @@
     </div>
   </div>
 
+  <!-- Video Render Modal -->
+  <div id="video-render-modal" class="mobile-modal" style="display: none; z-index: 2000;">
+    <div class="mobile-modal-content" style="max-width: 400px; text-align: center; padding: 24px; border-radius: 12px; display: flex; flex-direction: column; align-items: center;">
+      <div class="modal-spinner" style="font-size: 36px; color: var(--accent-color); margin-bottom: 16px;">
+        <i class="fa-solid fa-circle-notch fa-spin"></i>
+      </div>
+      <div class="mobile-modal-title" style="justify-content: center; margin-bottom: 8px; font-weight: bold; font-size: 16px;">
+        <span>動画ファイルを書き出し中...</span>
+      </div>
+      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;">
+        ブラウザのタブをアクティブにしたままお待ちください。<br>
+        (別のタブを開くと書き出しが一時停止します)
+      </p>
+      <!-- Progress Bar -->
+      <div class="progress-container" style="background: var(--border-color); border-radius: 6px; height: 10px; width: 100%; overflow: hidden; margin-bottom: 8px;">
+        <div id="video-render-progress" style="background: var(--accent-color); height: 100%; width: 0%; transition: width 0.1s linear;"></div>
+      </div>
+      <div id="video-render-percent" style="font-size: 13px; font-weight: bold; color: var(--text-primary); margin-bottom: 16px;">0%</div>
+      <button id="btn-cancel-video-render" class="btn btn-danger" style="width: 100%; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+        キャンセル
+      </button>
+    </div>
+  </div>
+
   <!-- Float Toast Notifications -->
   <div id="toast-container" class="toast-container"></div>
 
@@ -286,9 +357,9 @@
   </div>
 
   <!-- Code Scripts -->
-  <script src="js/db.js?v=20"></script>
-  <script src="js/config.js?v=20"></script>
-  <script src="js/text-engine.js?v=20"></script>
-  <script src="js/app.js?v=20"></script>
+  <script src="js/db.js?v=21"></script>
+  <script src="js/config.js?v=21"></script>
+  <script src="js/text-engine.js?v=21"></script>
+  <script src="js/app.js?v=21"></script>
 </body>
 </html>

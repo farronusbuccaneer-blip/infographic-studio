@@ -918,6 +918,13 @@ function initCollapsibleSections() {
     secImagesHeader.onclick = () => toggleAccordion(secImagesHeader, secImagesContainer);
   }
 
+  // 4. Audio & Video Settings Accordion
+  const audioVideoHeader = leftSidebar.querySelector('.audio-video-header');
+  const audioVideoContainer = leftSidebar.querySelector('.audio-video-container');
+  if (audioVideoHeader && audioVideoContainer) {
+    audioVideoHeader.onclick = () => toggleAccordion(audioVideoHeader, audioVideoContainer);
+  }
+
   // Right assets panel toggle (Mobile only)
   const toggleAssetSection = (element) => {
     if (window.innerWidth <= 768) {
@@ -942,6 +949,7 @@ function initCollapsibleSections() {
     if (textEditorContainer) textEditorContainer.classList.add('collapsed');
     if (titleImageContainer) titleImageContainer.classList.add('collapsed');
     if (secImagesContainer) secImagesContainer.classList.add('collapsed');
+    if (audioVideoContainer) audioVideoContainer.classList.add('collapsed');
     
     // Rotate all mobile chevrons
     document.querySelectorAll('.editor-sidebar .toggle-chevron').forEach(ch => {
@@ -951,15 +959,18 @@ function initCollapsibleSections() {
     paneTemplates.classList.add('collapsed');
     paneOverlays.classList.add('collapsed');
   } else {
-    // PC: Keep editor open, collapse image settings
+    // PC: Keep editor open, collapse image settings & audio video
     if (titleImageContainer) titleImageContainer.classList.add('collapsed');
     if (secImagesContainer) secImagesContainer.classList.add('collapsed');
+    if (audioVideoContainer) audioVideoContainer.classList.add('collapsed');
 
-    // Rotate PC chevrons for image panels
+    // Rotate PC chevrons for image/audio panels
     const tChevron = titleImageHeader ? titleImageHeader.querySelector('.toggle-chevron') : null;
     const sChevron = secImagesHeader ? secImagesHeader.querySelector('.toggle-chevron') : null;
+    const avChevron = audioVideoHeader ? audioVideoHeader.querySelector('.toggle-chevron') : null;
     if (tChevron) tChevron.style.transform = 'rotate(180deg)';
     if (sChevron) sChevron.style.transform = 'rotate(180deg)';
+    if (avChevron) avChevron.style.transform = 'rotate(180deg)';
   }
 }
 
@@ -1440,6 +1451,7 @@ window.onload = async () => {
       initMobileNavigation();
       initCollapsibleSections();
       initSectionImagesUI();
+      initAudioVideoFeatures();
 
       // 5. Load default starter data
       xmlInput.value = DEFAULT_XML_TEXT;
@@ -1464,3 +1476,567 @@ window.onload = async () => {
     loadingScreen.innerHTML = `<div class="loading-text" style="color: var(--danger-color);"><i class="fa-solid fa-triangle-exclamation"></i> 起動エラーが発生しました: ${err.message}</div>`;
   }
 };
+
+// ============================================================================
+// AUDIO & VIDEO GENERATION FEATURES (STAMP AND HIGHLIGHT SYNC)
+// ============================================================================
+
+// Audio & Video Generation State
+let loadedAudioBuffer = null;
+let activeAudioFile = null;
+let activeVideoRecorder = null;
+let activeVideoAudioSource = null;
+let isVideoRendering = false;
+
+/**
+ * Initialize Audio & Video Settings Features
+ */
+function initAudioVideoFeatures() {
+  const inputAudioFile = document.getElementById('input-audio-file');
+  const uploadAudioZone = document.getElementById('upload-audio-zone');
+  const btnDetectSilence = document.getElementById('btn-detect-silence');
+  const btnGenerateTimestampTemplate = document.getElementById('btn-generate-timestamp-template');
+  const timestampInput = document.getElementById('timestamp-input');
+  
+  const btnExportVideo34 = document.getElementById('btn-export-video-34');
+  const btnExportVideo916a = document.getElementById('btn-export-video-916a');
+  const btnExportVideo916b = document.getElementById('btn-export-video-916b');
+  
+  const btnCancelVideoRender = document.getElementById('btn-cancel-video-render');
+
+  // Drag and drop for audio zone
+  setupDragAndDrop(uploadAudioZone, handleAudioFile);
+  inputAudioFile.onchange = (e) => handleAudioFile(e.target.files[0]);
+
+  // Audio file handler
+  async function handleAudioFile(file) {
+    if (!file) return;
+    if (!file.type.match('audio/mp3') && !file.type.match('audio/mpeg') && !file.type.match('audio/*') && !file.name.endsWith('.mp3')) {
+      showToast('音声にはMP3ファイルを指定してください。', 'danger');
+      return;
+    }
+
+    activeAudioFile = file;
+    document.getElementById('audio-filename').innerText = file.name;
+    
+    const previewEl = document.getElementById('preview-audio-el');
+    previewEl.src = URL.createObjectURL(file);
+    document.getElementById('audio-player-preview').style.display = 'block';
+
+    showToast('音声ファイルを読み込み中...', 'warning');
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      loadedAudioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      audioCtx.close();
+      
+      btnDetectSilence.disabled = false;
+      btnExportVideo34.disabled = false;
+      btnExportVideo916a.disabled = false;
+      btnExportVideo916b.disabled = false;
+      
+      showToast('音声のデコードが完了しました！');
+    } catch (err) {
+      console.error('Audio decode failed:', err);
+      showToast('音声のデコードに失敗しました。', 'danger');
+    }
+  }
+
+  // Generate template timestamp
+  btnGenerateTimestampTemplate.onclick = () => {
+    const parsed = parseXMLText(xmlInput.value);
+    let template = "00:00 タイトル\n";
+    let currentSec = 2;
+    
+    parsed.sections.forEach((sec, i) => {
+      if (sec.row1 || sec.row2 || sec.row3) {
+        template += `00:${String(currentSec).padStart(2, '0')} セクション${i + 1}\n`;
+        currentSec += 5; // 5秒刻みで仮設定
+      }
+    });
+    
+    timestampInput.value = template.trim();
+    showToast('タイムスタンプの雛形を生成しました');
+  };
+
+  // Silence/Pause Detection for Auto Timestamps
+  btnDetectSilence.onclick = async () => {
+    if (!loadedAudioBuffer) return;
+    
+    showToast('波形を解析中...', 'warning');
+    
+    try {
+      const timestamps = detectSilenceTransitions(loadedAudioBuffer);
+      if (timestamps.length === 0) {
+        showToast('無音区間を検出できませんでした。構成から雛形を生成してください。', 'danger');
+        return;
+      }
+      
+      // XML構成から実在するターゲット一覧を取得
+      const parsed = parseXMLText(xmlInput.value);
+      const targets = ['タイトル'];
+      parsed.sections.forEach((sec, i) => {
+        if (sec.row1 || sec.row2 || sec.row3) {
+          targets.push(`セクション${i + 1}`);
+        }
+      });
+
+      // 検出された開始時間にターゲットをマッピング
+      let resultText = "";
+      for (let i = 0; i < Math.min(timestamps.length, targets.length); i++) {
+        const time = timestamps[i];
+        const minutes = Math.floor(time / 60);
+        const seconds = Math.floor(time % 60);
+        const ms = Math.floor((time % 1) * 100);
+        const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+        resultText += `${timeStr} ${targets[i]}\n`;
+      }
+
+      timestampInput.value = resultText.trim();
+      showToast('音声からタイムスタンプを自動検出しました！');
+    } catch (err) {
+      console.error('Silence detection error:', err);
+      showToast('解析中にエラーが発生しました。', 'danger');
+    }
+  };
+
+  // Export buttons
+  btnExportVideo34.onclick = () => exportVideo('3:4');
+  btnExportVideo916a.onclick = () => exportVideo('9:16-A');
+  btnExportVideo916b.onclick = () => exportVideo('9:16-B');
+
+  // Cancel rendering
+  btnCancelVideoRender.onclick = () => {
+    if (activeVideoRecorder && isVideoRendering) {
+      activeVideoRecorder.stop();
+      if (activeVideoAudioSource) {
+        try { activeVideoAudioSource.stop(); } catch(e){}
+      }
+      isVideoRendering = false;
+      document.getElementById('video-render-modal').style.display = 'none';
+      showToast('動画の書き出しをキャンセルしました', 'danger');
+    }
+  };
+}
+
+/**
+ * Silence transitions detection logic
+ */
+function detectSilenceTransitions(audioBuffer) {
+  const channelData = audioBuffer.getChannelData(0); // Left channel
+  const sampleRate = audioBuffer.sampleRate;
+  
+  // スキャン設定パラメータ
+  const windowSize = Math.round(sampleRate * 0.05); // 50ms 窓
+  const stepSize = Math.round(sampleRate * 0.02);   // 20ms 移動
+  const duration = audioBuffer.duration;
+  
+  // 閾値計算 (最大振幅の 3.5% を無音閾値にする)
+  let maxVal = 0;
+  for (let i = 0; i < channelData.length; i += 100) {
+    const v = Math.abs(channelData[i]);
+    if (v > maxVal) maxVal = v;
+  }
+  const silenceThreshold = maxVal * 0.035;
+  
+  // 各ステップの音量を計算
+  const volumes = [];
+  for (let offset = 0; offset < channelData.length - windowSize; offset += stepSize) {
+    let sum = 0;
+    for (let i = 0; i < windowSize; i++) {
+      sum += Math.abs(channelData[offset + i]);
+    }
+    const avg = sum / windowSize;
+    volumes.push({ time: offset / sampleRate, vol: avg });
+  }
+
+  // 無音 (Silence) か有音 (Speech) かのステート判定
+  const minSilenceDur = 0.6; // 0.6秒以上のポーズを文の区切りとする
+  const speechStates = []; // { start, end }
+  let inSpeech = false;
+  let speechStart = 0;
+  let silenceStart = 0;
+
+  for (let i = 0; i < volumes.length; i++) {
+    const isSilence = volumes[i].vol < silenceThreshold;
+    const time = volumes[i].time;
+
+    if (!inSpeech) {
+      if (!isSilence) {
+        inSpeech = true;
+        speechStart = time;
+      }
+    } else {
+      if (isSilence) {
+        if (silenceStart === 0) {
+          silenceStart = time;
+        } else if (time - silenceStart >= minSilenceDur) {
+          inSpeech = false;
+          speechStates.push({ start: speechStart, end: silenceStart });
+          silenceStart = 0;
+        }
+      } else {
+        silenceStart = 0; // 有音に戻った
+      }
+    }
+  }
+
+  // 最後の有音ブロックを追加
+  if (inSpeech) {
+    speechStates.push({ start: speechStart, end: duration });
+  }
+
+  // 各発話ブロックの開始秒数をタイムスタンプ候補として返す
+  // 最初の発話（タイトル）は 0.0秒からにするのが自然なため強制的に 0.0 に補正
+  const timestamps = speechStates.map((s, idx) => idx === 0 ? 0.0 : s.start);
+  return timestamps;
+}
+
+/**
+ * Parse input timestamp text
+ */
+function parseTimestampText(text) {
+  const lines = text.split('\n');
+  const list = [];
+  
+  lines.forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    
+    // hh:mm:ss.SS or mm:ss.SS
+    const match = line.match(/^(\d{1,2}:)?(\d{1,2}):(\d{1,2})(\.\d+)?/);
+    if (match) {
+      const timeStr = match[0];
+      const rest = line.substring(timeStr.length).trim();
+      
+      const parts = timeStr.split(':');
+      let seconds = 0;
+      if (parts.length === 3) {
+        seconds = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+      } else if (parts.length === 2) {
+        seconds = parseInt(parts[0]) * 60 + parseFloat(parts[1]);
+      }
+      
+      let target = 'title';
+      if (rest.includes('1') || rest.toLowerCase().includes('section1') || rest.includes('セクション1')) target = 'section1';
+      else if (rest.includes('2') || rest.toLowerCase().includes('section2') || rest.includes('セクション2')) target = 'section2';
+      else if (rest.includes('3') || rest.toLowerCase().includes('section3') || rest.includes('セクション3')) target = 'section3';
+      else if (rest.includes('4') || rest.toLowerCase().includes('section4') || rest.includes('セクション4')) target = 'section4';
+      else if (rest.includes('5') || rest.toLowerCase().includes('section5') || rest.includes('セクション5')) target = 'section5';
+      else if (rest.toLowerCase().includes('title') || rest.includes('タイトル')) target = 'title';
+      
+      list.push({ time: seconds, target: target });
+    }
+  });
+
+  list.sort((a, b) => a.time - b.time);
+  return list;
+}
+
+/**
+ * Canvas highlight and transfer rendering
+ */
+function drawHighlightOnRecordingCanvas(ctx, target, scaleX, scaleY) {
+  ctx.save();
+  let x, y, w, h;
+  if (target === 'title') {
+    x = 80 * scaleX;
+    y = 75 * scaleY;
+    w = 880 * scaleX;
+    h = 180 * scaleY;
+  } else if (target.startsWith('section')) {
+    const idx = parseInt(target.replace('section', '')) - 1;
+    x = 270 * scaleX;
+    y = (345 + idx * 225) * scaleY;
+    w = 850 * scaleX;
+    h = 170 * scaleY;
+  } else {
+    ctx.restore();
+    return;
+  }
+
+  // Draw light yellow semi-transparent background
+  ctx.fillStyle = 'rgba(251, 191, 36, 0.18)';
+  ctx.fillRect(x, y, w, h);
+
+  // Draw thick coral highlight border
+  ctx.strokeStyle = '#D3544C';
+  ctx.lineWidth = 6 * Math.min(scaleX, scaleY);
+  ctx.strokeRect(x, y, w, h);
+
+  ctx.restore();
+}
+
+/**
+ * Draw Fabric.js user overlays onto recording context
+ */
+function drawFabricObjectsOnRecordingCanvas(ctx, scaleX, scaleY) {
+  const objects = canvas.getObjects();
+  
+  objects.forEach(obj => {
+    // Skip guide borders and layout boxes
+    if (obj.name === 'title' && !obj.isTitleImage) return;
+    if (obj.name?.startsWith('section') && !obj.isSectionImage) return;
+    if (!obj._element) return;
+
+    ctx.save();
+    
+    // Calculate global position centered on the object
+    const center = obj.getCenterPoint();
+    ctx.translate(center.x * scaleX, center.y * scaleY);
+    ctx.rotate((obj.angle || 0) * Math.PI / 180);
+
+    const flipX = obj.flipX ? -1 : 1;
+    const flipY = obj.flipY ? -1 : 1;
+    ctx.scale(obj.scaleX * scaleX * flipX, obj.scaleY * scaleY * flipY);
+
+    const w = obj.width;
+    const h = obj.height;
+
+    ctx.globalAlpha = obj.opacity ?? 1;
+    ctx.drawImage(obj._element, -w / 2, -h / 2, w, h);
+    
+    ctx.restore();
+  });
+}
+
+/**
+ * Draw Down Arrow (↓) for Pattern B
+ */
+function drawDownArrowIcon(ctx, x, y, size) {
+  ctx.save();
+  ctx.fillStyle = '#D3544C'; // Coral red
+  
+  // Arrow line/shaft
+  const shaftW = size * 0.24;
+  const shaftH = size * 0.45;
+  ctx.fillRect(x - shaftW / 2, y - size * 0.15, shaftW, shaftH);
+  
+  // Arrow head (triangle)
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.45, y + size * 0.25);
+  ctx.lineTo(x + size * 0.45, y + size * 0.25);
+  ctx.lineTo(x, y + size * 0.7);
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.restore();
+}
+
+/**
+ * Core Video Rendering & Audio Recording Engine
+ */
+async function exportVideo(layoutType) {
+  if (!loadedAudioBuffer || !activeAudioFile) {
+    showToast('音声ファイルがロードされていません。', 'danger');
+    return;
+  }
+
+  const parsedTimestamps = parseTimestampText(document.getElementById('timestamp-input').value);
+  if (parsedTimestamps.length === 0) {
+    showToast('タイムスタンプを入力するか、自動検出を行ってください。', 'danger');
+    return;
+  }
+
+  // Setup UI
+  const progressModal = document.getElementById('video-render-modal');
+  const progressBar = document.getElementById('video-render-progress');
+  const progressPercent = document.getElementById('video-render-percent');
+  
+  progressModal.style.display = 'flex';
+  progressBar.style.width = '0%';
+  progressPercent.innerText = '0%';
+  
+  isVideoRendering = true;
+
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const dest = audioCtx.createMediaStreamDestination();
+    
+    // Create Audio Buffer Source node
+    const sourceNode = audioCtx.createBufferSource();
+    sourceNode.buffer = loadedAudioBuffer;
+    sourceNode.connect(dest);
+    sourceNode.connect(audioCtx.destination); // Play locally so user can hear / sync
+    activeVideoAudioSource = sourceNode;
+
+    // Define dimensions based on layout type
+    const recordWidth = 1200;
+    // 3:4 is 1200x1600. 9:16 is 1200x2134 (1200 * 16 / 9 = 2133.33)
+    const recordHeight = layoutType === '3:4' ? 1600 : 2134;
+
+    // Create recording canvas
+    const recordCanvas = document.createElement('canvas');
+    recordCanvas.width = recordWidth;
+    recordCanvas.height = recordHeight;
+    const ctx = recordCanvas.getContext('2d');
+
+    // Create offscreen template drawing canvas
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 1200;
+    tempCanvas.height = 1600;
+    const tempCtx = tempCanvas.getContext('2d');
+
+    // Setup base background image
+    const templateImg = new Image();
+    await new Promise((resolve) => {
+      templateImg.onload = resolve;
+      templateImg.src = activeTemplate.data_url;
+    });
+
+    const parsedText = parseXMLText(xmlInput.value);
+
+    // Audio stream and Canvas stream capture
+    const canvasStream = recordCanvas.captureStream(30); // 30 FPS Capture
+    const combinedStream = new MediaStream();
+    
+    canvasStream.getVideoTracks().forEach(track => combinedStream.addTrack(track));
+    dest.stream.getAudioTracks().forEach(track => combinedStream.addTrack(track));
+
+    // Determine compatible video mimeType
+    let selectedMime = 'video/webm';
+    const mimes = [
+      'video/mp4;codecs=h264,aac',
+      'video/mp4;codecs=h264',
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm'
+    ];
+    for (const mime of mimes) {
+      if (MediaRecorder.isTypeSupported(mime)) {
+        selectedMime = mime;
+        break;
+      }
+    }
+    console.log('Selected recorder mimeType:', selectedMime);
+
+    const recorder = new MediaRecorder(combinedStream, {
+      mimeType: selectedMime,
+      videoBitsPerSecond: 3000000 // 3.0 Mbps
+    });
+    activeVideoRecorder = recorder;
+
+    const chunks = [];
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) chunks.push(e.data);
+    };
+
+    recorder.onstop = () => {
+      if (!isVideoRendering) {
+        audioCtx.close();
+        return; // Cancelled
+      }
+      
+      const blob = new Blob(chunks, { type: selectedMime });
+      const url = URL.createObjectURL(blob);
+      
+      // Clean filename based on XML title
+      let cleanTitle = (parsedText.title || '').replace(/<[^>]*>/g, '').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_').trim();
+      const filename = cleanTitle ? `${cleanTitle}_${layoutType.replace(':', '')}.mp4` : `video_${Date.now()}_${layoutType.replace(':', '')}.mp4`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Reset UI state
+      progressModal.style.display = 'none';
+      isVideoRendering = false;
+      showToast('動画の書き出しが完了しました！');
+      audioCtx.close();
+    };
+
+    // Start audio & video recording
+    recorder.start();
+    sourceNode.start(0);
+    const startTime = audioCtx.currentTime;
+    const duration = loadedAudioBuffer.duration + 1.0; // 音声終了+1秒余裕
+
+    // Main animation frame loop
+    function renderLoop() {
+      if (!isVideoRendering) return;
+
+      const elapsed = audioCtx.currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1.0);
+      
+      progressBar.style.width = `${progress * 100}%`;
+      progressPercent.innerText = `${Math.round(progress * 100)}%`;
+
+      if (elapsed >= duration) {
+        recorder.stop();
+        return;
+      }
+
+      // 1. Determine active highlight target based on elapsed time
+      let activeTarget = null;
+      for (let i = parsedTimestamps.length - 1; i >= 0; i--) {
+        if (elapsed >= parsedTimestamps[i].time) {
+          activeTarget = parsedTimestamps[i].target;
+          break;
+        }
+      }
+
+      // 2. Draw 1200x1600 main graphic into tempCanvas
+      tempCtx.clearRect(0, 0, 1200, 1600);
+      tempCtx.drawImage(templateImg, 0, 0, 1200, 1600);
+      
+      if (activeTarget) {
+        drawHighlightOnRecordingCanvas(tempCtx, activeTarget, 1.0, 1.0);
+      }
+      
+      renderTextOnCanvas(tempCtx, parsedText, activeCoords);
+      drawFabricObjectsOnRecordingCanvas(tempCtx, 1.0, 1.0);
+
+      // 3. Render and composite onto recording canvas
+      ctx.clearRect(0, 0, recordWidth, recordHeight);
+      
+      if (layoutType === '3:4') {
+        // Draw directly
+        ctx.drawImage(tempCanvas, 0, 0);
+      } else {
+        // 9:16 layout
+        // Fill white background
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, recordWidth, recordHeight);
+
+        // Center 1200x1600 main graphic (Y: 267)
+        ctx.drawImage(tempCanvas, 0, 267, 1200, 1600);
+
+        // Draw header and footer texts on white margins
+        ctx.fillStyle = '#1E314B'; // Navy blue theme
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = "bold 44px 'Segoe UI', 'Noto Sans JP', sans-serif";
+
+        if (layoutType === '9:16-A') {
+          // Pattern A
+          ctx.fillText('チャンネル登録・高評価お願いします！', 600, 133);
+          ctx.fillText('使いたい表現をコメントしてください！', 600, 2000);
+        } else if (layoutType === '9:16-B') {
+          // Pattern B
+          ctx.fillText('使いたい表現をコメントしてください！', 600, 133);
+          ctx.fillText('復習できるように今すぐ保存', 600, 2000);
+          
+          // Draw Red Down Arrow on bottom-right (Instagram Bookmark overlay area)
+          // X: 1100, Y: 2000, Size: 60px
+          drawDownArrowIcon(ctx, 1100, 2000, 60);
+        }
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    // Start frame loop
+    renderLoop();
+
+  } catch (err) {
+    console.error('Video generation failed:', err);
+    showToast('動画の書き出しに失敗しました。', 'danger');
+    progressModal.style.display = 'none';
+    isVideoRendering = false;
+  }
+}
+
