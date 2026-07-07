@@ -183,7 +183,7 @@ function wrapStyledText(ctx, tokensArray, maxWidth) {
  * Performs dynamic fit-to-box rendering on the target canvas context.
  * Adjusts font sizes iteratively to ensure all text fits inside their boxes.
  */
-function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false) {
+function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false, hideFooter = false) {
   const fontFam = "'Segoe UI', 'Noto Sans JP', sans-serif";
   ctx.textBaseline = 'top';
 
@@ -390,6 +390,7 @@ function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false) {
   }
 
   // 3. Render Footer (Branding & Bookmark CTA)
+  if (hideFooter) return;
   // Scale footer relative to active template resolution
   const scaleX = originalWidth / 1200;
   const scaleY = originalHeight / 1600;

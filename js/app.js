@@ -1987,7 +1987,9 @@ async function exportVideo(layoutType) {
         drawHighlightOnRecordingCanvas(tempCtx, activeTarget, 1.0, 1.0);
       }
       
-      renderTextOnCanvas(tempCtx, parsedText, activeCoords);
+      // Hide footer for 9:16 video sizes
+      const hideFooter = layoutType !== '3:4';
+      renderTextOnCanvas(tempCtx, parsedText, activeCoords, false, hideFooter);
       drawFabricObjectsOnRecordingCanvas(tempCtx, 1.0, 1.0);
 
       // 3. Render and composite onto recording canvas
@@ -1998,26 +2000,41 @@ async function exportVideo(layoutType) {
         ctx.drawImage(tempCanvas, 0, 0);
       } else {
         // 9:16 layout
-        // Fill white background
-        ctx.fillStyle = '#FFFFFF';
+        // Fill black background
+        ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, recordWidth, recordHeight);
 
         // Center 1200x1600 main graphic (Y: 267)
         ctx.drawImage(tempCanvas, 0, 267, 1200, 1600);
 
+        // Draw header and footer texts on black margins
+        ctx.fillStyle = '#FFFFFF'; // White text
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = "bold 44px 'Segoe UI', 'Noto Sans JP', sans-serif";
+
         if (layoutType === '9:16-A') {
-          // Pattern A: Both blocks are full-width (1040px)
-          drawRichCTABox(ctx, 'チャンネル登録・高評価お願いします！', 80, 73, 1040, 120);
-          drawRichCTABox(ctx, '使いたい表現をコメントしてください！', 80, 1940, 1040, 120);
+          // Pattern A
+          ctx.fillText('チャンネル登録・高評価お願いします！', 600, 133);
+          ctx.fillText('使いたい表現をコメントしてください！', 600, 2000);
         } else if (layoutType === '9:16-B') {
-          // Pattern B: Top block is full-width (1040px), Bottom block is narrow (900px) to leave space for the arrow
-          drawRichCTABox(ctx, '使いたい表現をコメントしてください！', 80, 73, 1040, 120);
-          drawRichCTABox(ctx, '復習できるように今すぐ保存', 80, 1940, 880, 120);
+          // Pattern B
+          ctx.fillText('使いたい表現をコメントしてください！', 600, 133);
+          
+          // Center-left aligned to leave space for the arrow
+          ctx.textAlign = 'left';
+          ctx.fillText('復習できるように今すぐ保存', 80, 2000);
           
           // Draw Red Down Arrow on bottom-right (Instagram Bookmark overlay area)
-          // Centered at X: 1080 (in the 240px space after the box), Y: 2000, Size: 60px
-          drawDownArrowIcon(ctx, 1085, 2000, 64);
+          // X: 1100, Y: 2000, Size: 64px
+          drawDownArrowIcon(ctx, 1100, 2000, 64);
         }
+
+        // Draw @farron_us at the very bottom right of the black canvas
+        ctx.fillStyle = '#888888'; // Subdued light gray
+        ctx.font = "bold 30px 'Segoe UI', 'Noto Sans JP', sans-serif";
+        ctx.textAlign = 'right';
+        ctx.fillText('@farron_us', 1120, 2075);
       }
 
       requestAnimationFrame(renderLoop);
