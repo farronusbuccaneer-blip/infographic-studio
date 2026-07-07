@@ -1546,8 +1546,8 @@ function initAudioVideoFeatures() {
   // Generate template timestamp
   btnGenerateTimestampTemplate.onclick = () => {
     const parsed = parseXMLText(xmlInput.value);
-    let template = "00:00 タイトル\n";
-    let currentSec = 2;
+    let template = "";
+    let currentSec = 0;
     
     parsed.sections.forEach((sec, i) => {
       if (sec.row1 || sec.row2 || sec.row3) {
@@ -1575,7 +1575,7 @@ function initAudioVideoFeatures() {
       
       // XML構成から実在するターゲット一覧を取得
       const parsed = parseXMLText(xmlInput.value);
-      const targets = ['タイトル'];
+      const targets = [];
       parsed.sections.forEach((sec, i) => {
         if (sec.row1 || sec.row2 || sec.row3) {
           targets.push(`セクション${i + 1}`);
@@ -2005,24 +2005,18 @@ async function exportVideo(layoutType) {
         // Center 1200x1600 main graphic (Y: 267)
         ctx.drawImage(tempCanvas, 0, 267, 1200, 1600);
 
-        // Draw header and footer texts on white margins
-        ctx.fillStyle = '#1E314B'; // Navy blue theme
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = "bold 44px 'Segoe UI', 'Noto Sans JP', sans-serif";
-
         if (layoutType === '9:16-A') {
-          // Pattern A
-          ctx.fillText('チャンネル登録・高評価お願いします！', 600, 133);
-          ctx.fillText('使いたい表現をコメントしてください！', 600, 2000);
+          // Pattern A: Both blocks are full-width (1040px)
+          drawRichCTABox(ctx, 'チャンネル登録・高評価お願いします！', 80, 73, 1040, 120);
+          drawRichCTABox(ctx, '使いたい表現をコメントしてください！', 80, 1940, 1040, 120);
         } else if (layoutType === '9:16-B') {
-          // Pattern B
-          ctx.fillText('使いたい表現をコメントしてください！', 600, 133);
-          ctx.fillText('復習できるように今すぐ保存', 600, 2000);
+          // Pattern B: Top block is full-width (1040px), Bottom block is narrow (900px) to leave space for the arrow
+          drawRichCTABox(ctx, '使いたい表現をコメントしてください！', 80, 73, 1040, 120);
+          drawRichCTABox(ctx, '復習できるように今すぐ保存', 80, 1940, 880, 120);
           
           // Draw Red Down Arrow on bottom-right (Instagram Bookmark overlay area)
-          // X: 1100, Y: 2000, Size: 60px
-          drawDownArrowIcon(ctx, 1100, 2000, 60);
+          // Centered at X: 1080 (in the 240px space after the box), Y: 2000, Size: 60px
+          drawDownArrowIcon(ctx, 1085, 2000, 64);
         }
       }
 
@@ -2038,5 +2032,37 @@ async function exportVideo(layoutType) {
     progressModal.style.display = 'none';
     isVideoRendering = false;
   }
+}
+
+/**
+ * Draw a rich styled CTA Box matching infographic theme (Beige box, Navy border, Coral shadow)
+ */
+function drawRichCTABox(ctx, text, x, y, w, h) {
+  ctx.save();
+  
+  const navyColor = '#1E314B';
+  const coralColor = '#D3544C';
+
+  // 1. Draw Drop Shadow (offset 8px right and down)
+  ctx.fillStyle = coralColor;
+  ctx.fillRect(x + 8, y + 8, w, h);
+
+  // 2. Draw Main Rectangle Background (Creamy Beige)
+  ctx.fillStyle = '#F7F4EB'; // Matches Cream Background of the main template
+  ctx.fillRect(x, y, w, h);
+
+  // 3. Draw Thick Navy Border
+  ctx.strokeStyle = navyColor;
+  ctx.lineWidth = 6;
+  ctx.strokeRect(x, y, w, h);
+
+  // 4. Draw Center Text
+  ctx.fillStyle = navyColor;
+  ctx.font = "bold 34px 'Segoe UI', 'Noto Sans JP', sans-serif";
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x + w / 2, y + h / 2);
+
+  ctx.restore();
 }
 

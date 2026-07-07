@@ -1078,6 +1078,12 @@ textarea#xml-input:focus {
   overflow: hidden;
 }
 
+@media (min-width: 769px) {
+  .text-editor-container {
+    max-height: 720px;
+  }
+}
+
 .text-editor-container.collapsed {
   max-height: 0 !important;
   padding-top: 0 !important;
