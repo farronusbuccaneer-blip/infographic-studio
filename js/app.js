@@ -1898,11 +1898,18 @@ async function exportVideo(layoutType) {
     canvasStream.getVideoTracks().forEach(track => combinedStream.addTrack(track));
     dest.stream.getAudioTracks().forEach(track => combinedStream.addTrack(track));
 
-    // Determine compatible video mimeType
+    // Determine compatible video mimeType (Highly prioritize H.264/AVC for X/Twitter uploading)
     let selectedMime = 'video/webm';
     const mimes = [
+      'video/mp4;codecs="avc1.42E01E,mp4a.40.2"', // H.264 Baseline, AAC
+      'video/mp4;codecs="avc1.4D401E,mp4a.40.2"', // H.264 Main, AAC
+      'video/mp4;codecs="avc1,mp4a.40.2"',
+      'video/mp4;codecs="avc1"',
       'video/mp4;codecs=h264,aac',
       'video/mp4;codecs=h264',
+      'video/webm;codecs=h264,aac', // H.264 inside WebM
+      'video/webm;codecs=h264,opus',
+      'video/webm;codecs=h264',
       'video/webm;codecs=vp9,opus',
       'video/webm;codecs=vp8,opus',
       'video/webm'
@@ -1935,9 +1942,8 @@ async function exportVideo(layoutType) {
       const blob = new Blob(chunks, { type: selectedMime });
       const url = URL.createObjectURL(blob);
       
-      // Determine output extension based on mimeType (X/Twitter rejects fake .mp4 headers)
-      const isMp4 = selectedMime.includes('video/mp4');
-      const ext = isMp4 ? '.mp4' : '.webm';
+      // Force .mp4 extension for SNS upload compatibility (X/Twitter accepts H.264 stream renamed to .mp4)
+      const ext = '.mp4';
 
       // Clean filename based on XML title
       let cleanTitle = (parsedText.title || '').replace(/<[^>]*>/g, '').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_').trim();
@@ -2033,10 +2039,10 @@ async function exportVideo(layoutType) {
           ctx.fillText('使いたい表現をコメントしてください！', 600, 2000);
         } else if (layoutType === '9:16-B') {
           // Pattern B
-          ctx.fillText('使いたい表現をコメントしてください！', 600, 133);
+          ctx.fillText('復習用に保存🍀', 600, 133);
           
           // Centered text
-          ctx.fillText('音声を再生→→→', 600, 2000);
+          ctx.fillText('音声をONにしてお手本を再生→→→', 600, 2000);
           
           // Draw Red Arrow pointing Right (➡) on bottom-right (Instagram Bookmark overlay area)
           // X: 1100, Y: 2000, Size: 64px, Rotated 90 degrees (Right)
