@@ -1803,6 +1803,7 @@ function drawFabricObjectsOnRecordingCanvas(ctx, scaleX, scaleY) {
 
 /**
  * Draw a rotated Arrow icon (defaults pointing Upwards, rotated by angleDegrees)
+ * Optimized for a bold, thick vector shape.
  */
 function drawRotatedArrowIcon(ctx, x, y, size, angleDegrees) {
   ctx.save();
@@ -1811,16 +1812,16 @@ function drawRotatedArrowIcon(ctx, x, y, size, angleDegrees) {
   ctx.translate(x, y);
   ctx.rotate(angleDegrees * Math.PI / 180);
   
-  // Arrow line/shaft
-  const shaftW = size * 0.24;
-  const shaftH = size * 0.45;
-  ctx.fillRect(-shaftW / 2, -size * 0.15, shaftW, shaftH);
+  // Bold Arrow line/shaft (shaftW increased to 0.38)
+  const shaftW = size * 0.38;
+  const shaftH = size * 0.42;
+  ctx.fillRect(-shaftW / 2, -size * 0.12, shaftW, shaftH);
   
-  // Arrow head (triangle pointing Upwards relative to local coordinate system)
+  // Bold Arrow head (triangle pointing Upwards, width increased to 0.6)
   ctx.beginPath();
-  ctx.moveTo(-size * 0.45, -size * 0.15);
-  ctx.lineTo(size * 0.45, -size * 0.15);
-  ctx.lineTo(0, -size * 0.6);
+  ctx.moveTo(-size * 0.6, -size * 0.12);
+  ctx.lineTo(size * 0.6, -size * 0.12);
+  ctx.lineTo(0, -size * 0.68);
   ctx.closePath();
   ctx.fill();
   
@@ -2024,7 +2025,7 @@ async function exportVideo(layoutType) {
         ctx.fillStyle = '#FFFFFF'; // White text
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = "bold 44px 'Segoe UI', 'Noto Sans JP', sans-serif";
+        ctx.font = "bold 56px 'Segoe UI', 'Noto Sans JP', sans-serif";
 
         if (layoutType === '9:16-A') {
           // Pattern A
@@ -2035,11 +2036,11 @@ async function exportVideo(layoutType) {
           ctx.fillText('使いたい表現をコメントしてください！', 600, 133);
           
           // Centered text
-          ctx.fillText('復習できるように今すぐ保存', 600, 2000);
+          ctx.fillText('音声を再生→→→', 600, 2000);
           
-          // Draw Red Arrow pointing Up-Right (↗) on bottom-right (Instagram Bookmark overlay area)
-          // X: 1100, Y: 2000, Size: 64px, Rotated 45 degrees
-          drawRotatedArrowIcon(ctx, 1100, 2000, 64, 45);
+          // Draw Red Arrow pointing Right (➡) on bottom-right (Instagram Bookmark overlay area)
+          // X: 1100, Y: 2000, Size: 64px, Rotated 90 degrees (Right)
+          drawRotatedArrowIcon(ctx, 1100, 2000, 64, 90);
         }
 
         // Draw @farron_us at the very bottom right of the black canvas
