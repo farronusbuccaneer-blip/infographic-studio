@@ -1934,6 +1934,10 @@ async function exportVideo(layoutType) {
       const blob = new Blob(chunks, { type: selectedMime });
       const url = URL.createObjectURL(blob);
       
+      // Determine output extension based on mimeType (X/Twitter rejects fake .mp4 headers)
+      const isMp4 = selectedMime.includes('video/mp4');
+      const ext = isMp4 ? '.mp4' : '.webm';
+
       // Clean filename based on XML title
       let cleanTitle = (parsedText.title || '').replace(/<[^>]*>/g, '').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_').trim();
       
@@ -1942,7 +1946,7 @@ async function exportVideo(layoutType) {
       else if (layoutType === '9:16-A') suffix = '_youtube';
       else if (layoutType === '9:16-B') suffix = '_insta';
 
-      const filename = cleanTitle ? `${cleanTitle}${suffix}.mp4` : `video_${Date.now()}${suffix}.mp4`;
+      const filename = cleanTitle ? `${cleanTitle}${suffix}${ext}` : `video_${Date.now()}${suffix}${ext}`;
 
       const a = document.createElement('a');
       a.href = url;
