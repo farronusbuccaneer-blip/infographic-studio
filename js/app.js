@@ -1617,23 +1617,16 @@ function initAudioVideoFeatures() {
 
     const ttsUrl = `https://translate.google.com/translate_tts?client=tw-ob&tl=en&q=${encodeURIComponent(cleanText)}`;
     
-    // User custom proxy (e.g. Cloudflare Worker)
-    const customProxyInput = document.getElementById('custom-tts-proxy-input');
-    const customProxy = (customProxyInput ? customProxyInput.value : '').trim();
+    // 1. User specified Worker or Default Cloudflare Worker (dawn-smoke-8cec.farronusbuccaneer.workers.dev)
+    const activeWorker = customProxy || 'https://dawn-smoke-8cec.farronusbuccaneer.workers.dev/';
+    const cleanProxy = activeWorker.replace(/\/$/, '');
+    const separator = cleanProxy.includes('?') ? '&' : '?';
+    
+    proxyUrls.push(`${cleanProxy}${separator}url=${encodeURIComponent(ttsUrl)}`);
+    proxyUrls.push(`${cleanProxy}${separator}q=${encodeURIComponent(cleanText)}`);
+    proxyUrls.push(`${cleanProxy}/?${ttsUrl}`);
 
-    const proxyUrls = [];
-
-    // 1. Custom Cloudflare Worker / User Proxy
-    if (customProxy) {
-      const cleanProxy = customProxy.replace(/\/$/, '');
-      const separator = cleanProxy.includes('?') ? '&' : '?';
-      // Prioritize ?url= parameter required by user's Cloudflare Worker script
-      proxyUrls.push(`${cleanProxy}${separator}url=${encodeURIComponent(ttsUrl)}`);
-      proxyUrls.push(`${cleanProxy}${separator}q=${encodeURIComponent(cleanText)}`);
-      proxyUrls.push(`${cleanProxy}/?${ttsUrl}`);
-    }
-
-    // 2. Default Public CORS Proxies
+    // 2. Default Public CORS Proxies Fallback
     proxyUrls.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(ttsUrl)}`);
     proxyUrls.push(`https://thingproxy.freeboard.io/fetch/${ttsUrl}`);
     proxyUrls.push(`https://corsproxy.io/?${ttsUrl}`);
