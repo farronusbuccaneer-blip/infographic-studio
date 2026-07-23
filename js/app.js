@@ -1626,14 +1626,11 @@ function initAudioVideoFeatures() {
     // 1. Custom Cloudflare Worker / User Proxy
     if (customProxy) {
       const cleanProxy = customProxy.replace(/\/$/, '');
-      if (cleanProxy.includes('?')) {
-        proxyUrls.push(`${cleanProxy}&q=${encodeURIComponent(cleanText)}`);
-        proxyUrls.push(`${cleanProxy}&url=${encodeURIComponent(ttsUrl)}`);
-      } else {
-        proxyUrls.push(`${cleanProxy}/?q=${encodeURIComponent(cleanText)}`);
-        proxyUrls.push(`${cleanProxy}/?url=${encodeURIComponent(ttsUrl)}`);
-        proxyUrls.push(`${cleanProxy}/?${ttsUrl}`);
-      }
+      const separator = cleanProxy.includes('?') ? '&' : '?';
+      // Prioritize ?url= parameter required by user's Cloudflare Worker script
+      proxyUrls.push(`${cleanProxy}${separator}url=${encodeURIComponent(ttsUrl)}`);
+      proxyUrls.push(`${cleanProxy}${separator}q=${encodeURIComponent(cleanText)}`);
+      proxyUrls.push(`${cleanProxy}/?${ttsUrl}`);
     }
 
     // 2. Default Public CORS Proxies (fixed unencoded format for corsproxy.io)
