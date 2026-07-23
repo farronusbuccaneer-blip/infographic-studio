@@ -2051,8 +2051,8 @@ function drawRotatedArrowIcon(ctx, x, y, size, angleDegrees) {
  * Core Video Rendering & Audio Recording Engine
  */
 async function exportVideo(layoutType) {
-  if (!loadedAudioBuffer || !activeAudioFile) {
-    showToast('音声ファイルがロードされていません。', 'danger');
+  if (!loadedAudioBuffer) {
+    showToast('音声ファイルまたはAI音声が準備されていません。', 'danger');
     return;
   }
 
