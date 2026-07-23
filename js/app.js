@@ -1617,11 +1617,29 @@ function initAudioVideoFeatures() {
 
     const ttsUrl = `https://translate.google.com/translate_tts?client=tw-ob&tl=en&q=${encodeURIComponent(cleanText)}`;
     
-    // List of CORS proxies to attempt in sequence
-    const proxyUrls = [
-      `https://corsproxy.io/?${encodeURIComponent(ttsUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(ttsUrl)}`
-    ];
+    // User custom proxy (e.g. Cloudflare Worker)
+    const customProxyInput = document.getElementById('custom-tts-proxy-input');
+    const customProxy = (customProxyInput ? customProxyInput.value : '').trim();
+
+    const proxyUrls = [];
+
+    // 1. Custom Cloudflare Worker / User Proxy
+    if (customProxy) {
+      const cleanProxy = customProxy.replace(/\/$/, '');
+      if (cleanProxy.includes('?')) {
+        proxyUrls.push(`${cleanProxy}&q=${encodeURIComponent(cleanText)}`);
+        proxyUrls.push(`${cleanProxy}&url=${encodeURIComponent(ttsUrl)}`);
+      } else {
+        proxyUrls.push(`${cleanProxy}/?q=${encodeURIComponent(cleanText)}`);
+        proxyUrls.push(`${cleanProxy}/?url=${encodeURIComponent(ttsUrl)}`);
+        proxyUrls.push(`${cleanProxy}/?${ttsUrl}`);
+      }
+    }
+
+    // 2. Default Public CORS Proxies (fixed unencoded format for corsproxy.io)
+    proxyUrls.push(`https://corsproxy.io/?${ttsUrl}`); // Standard corsproxy.io takes raw URL after ?
+    proxyUrls.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(ttsUrl)}`);
+    proxyUrls.push(`https://thingproxy.freeboard.io/fetch/${ttsUrl}`);
 
     for (const proxyUrl of proxyUrls) {
       try {
