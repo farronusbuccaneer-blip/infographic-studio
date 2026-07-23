@@ -2225,7 +2225,7 @@ async function exportVideo(layoutType) {
       }
 
       if (activeTarget) {
-        const secMatch = activeTarget.match(/セクション(\d+)/);
+        const secMatch = activeTarget.match(/(?:section|セクション)(\d+)/i);
         if (secMatch) {
           activeHighlightSectionIndex = parseInt(secMatch[1], 10) - 1;
         }
