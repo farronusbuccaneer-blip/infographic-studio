@@ -34,6 +34,7 @@ const btnDownload = document.getElementById('btn-download');
 const btnResetText = document.getElementById('btn-reset-text');
 const btnClearText = document.getElementById('btn-clear-text');
 const btnGenerateTTS = document.getElementById('btn-generate-tts');
+const btnReGenerateTTS = document.getElementById('btn-re-generate-tts');
 
 // File Upload inputs
 const inputUploadTemplate = document.getElementById('input-upload-template');
@@ -1845,6 +1846,12 @@ function initAudioVideoFeatures() {
         showToast('AI音声生成中にエラーが発生しました。', 'danger');
       }
     };
+
+    if (btnReGenerateTTS) {
+      btnReGenerateTTS.onclick = () => {
+        btnGenerateTTS.click();
+      };
+    }
   }
 
   // Export buttons
