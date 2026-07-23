@@ -1956,7 +1956,7 @@ function parseTimestampText(text) {
 /**
  * Canvas highlight and transfer rendering
  */
-function drawHighlightOnRecordingCanvas(ctx, target, scaleX, scaleY) {
+function drawHighlightOnRecordingCanvas(ctx, target, scaleX, scaleY, sectionCount = 5) {
   ctx.save();
   let x, y, w, h;
   if (target === 'title') {
@@ -1966,10 +1966,14 @@ function drawHighlightOnRecordingCanvas(ctx, target, scaleX, scaleY) {
     h = 180 * scaleY;
   } else if (target.startsWith('section')) {
     const idx = parseInt(target.replace('section', '')) - 1;
+    const count = sectionCount === 4 ? 4 : 5;
+    const rowSpacing = count === 4 ? 280 : 225;
+    const boxH = count === 4 ? 220 : 170;
+
     x = 270 * scaleX;
-    y = (345 + idx * 225) * scaleY;
+    y = (345 + idx * rowSpacing) * scaleY;
     w = 850 * scaleX;
-    h = 170 * scaleY;
+    h = boxH * scaleY;
   } else {
     ctx.restore();
     return;
@@ -2231,7 +2235,7 @@ async function exportVideo(layoutType) {
       tempCtx.drawImage(templateImg, 0, 0, 1200, 1600);
       
       if (activeTarget) {
-        drawHighlightOnRecordingCanvas(tempCtx, activeTarget, 1.0, 1.0);
+        drawHighlightOnRecordingCanvas(tempCtx, activeTarget, 1.0, 1.0, parsedText.sectionCount);
       }
       
       // Hide footer for 9:16 video sizes
