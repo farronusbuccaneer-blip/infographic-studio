@@ -1633,10 +1633,10 @@ function initAudioVideoFeatures() {
       proxyUrls.push(`${cleanProxy}/?${ttsUrl}`);
     }
 
-    // 2. Default Public CORS Proxies (fixed unencoded format for corsproxy.io)
-    proxyUrls.push(`https://corsproxy.io/?${ttsUrl}`); // Standard corsproxy.io takes raw URL after ?
+    // 2. Default Public CORS Proxies
     proxyUrls.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(ttsUrl)}`);
     proxyUrls.push(`https://thingproxy.freeboard.io/fetch/${ttsUrl}`);
+    proxyUrls.push(`https://corsproxy.io/?${ttsUrl}`);
 
     for (const proxyUrl of proxyUrls) {
       try {
