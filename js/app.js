@@ -1617,19 +1617,28 @@ function initAudioVideoFeatures() {
 
     const ttsUrl = `https://translate.google.com/translate_tts?client=tw-ob&tl=en&q=${encodeURIComponent(cleanText)}`;
     
+    // User custom proxy (e.g. Cloudflare Worker)
+    const customProxyInput = document.getElementById('custom-tts-proxy-input');
+    const customProxy = (customProxyInput ? customProxyInput.value : '').trim();
+
+    const proxyUrls = [];
+
     // 1. User specified Worker or Default Cloudflare Worker (dawn-smoke-8cec.farronusbuccaneer.workers.dev)
     const activeWorker = customProxy || 'https://dawn-smoke-8cec.farronusbuccaneer.workers.dev/';
     const cleanProxy = activeWorker.replace(/\/$/, '');
     const separator = cleanProxy.includes('?') ? '&' : '?';
     
-    proxyUrls.push(`${cleanProxy}${separator}url=${encodeURIComponent(ttsUrl)}`);
+    // Double encode because user's worker script calls decodeURIComponent(urlVal) after searchParams.get('url')
+    const doubleEncoded = encodeURIComponent(encodeURIComponent(ttsUrl));
+    const singleEncoded = encodeURIComponent(ttsUrl);
+
+    proxyUrls.push(`${cleanProxy}${separator}url=${doubleEncoded}`);
+    proxyUrls.push(`${cleanProxy}${separator}url=${singleEncoded}`);
     proxyUrls.push(`${cleanProxy}${separator}q=${encodeURIComponent(cleanText)}`);
-    proxyUrls.push(`${cleanProxy}/?${ttsUrl}`);
 
     // 2. Default Public CORS Proxies Fallback
-    proxyUrls.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(ttsUrl)}`);
+    proxyUrls.push(`https://api.allorigins.win/raw?url=${singleEncoded}`);
     proxyUrls.push(`https://thingproxy.freeboard.io/fetch/${ttsUrl}`);
-    proxyUrls.push(`https://corsproxy.io/?${ttsUrl}`);
 
     for (const proxyUrl of proxyUrls) {
       try {
@@ -1638,19 +1647,28 @@ function initAudioVideoFeatures() {
           const arrayBuffer = await response.arrayBuffer();
           const decodedAudio = await audioCtx.decodeAudioData(arrayBuffer);
           return decodedAudio;
+        } else {
+          console.warn(`TTS Proxy returned HTTP ${response.status} for ${proxyUrl}`);
         }
       } catch (e) {
         console.warn('TTS proxy attempt failed:', proxyUrl, e);
       }
     }
 
-    // Fallback: Web Speech API synthesis capture
+    // 3. Fallback: Local Speech Synthesis audio buffer generator
+    console.warn('All TTS network proxies failed. Using Web Speech API fallback...');
+    return synthesizeAudioBufferFallback(cleanText, audioCtx);
+  }
+
+  function synthesizeAudioBufferFallback(cleanText, audioCtx) {
     return new Promise((resolve) => {
       if (!('speechSynthesis' in window)) {
         resolve(null);
         return;
       }
       const synth = window.speechSynthesis;
+      synth.cancel();
+
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.lang = 'en-US';
       utterance.rate = 0.95;
@@ -1666,7 +1684,7 @@ function initAudioVideoFeatures() {
       const gain = offlineCtx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(440, 0);
-      gain.gain.setValueAtTime(0.01, 0);
+      gain.gain.setValueAtTime(0.001, 0);
       osc.connect(gain);
       gain.connect(offlineCtx.destination);
       osc.start();
@@ -1675,7 +1693,10 @@ function initAudioVideoFeatures() {
       synth.speak(utterance);
       offlineCtx.startRendering().then(renderedBuffer => {
         resolve(renderedBuffer);
-      }).catch(() => resolve(null));
+      }).catch((e) => {
+        console.error('OfflineAudioContext rendering failed:', e);
+        resolve(null);
+      });
     });
   }
 
