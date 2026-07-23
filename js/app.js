@@ -1729,8 +1729,9 @@ function initAudioVideoFeatures() {
         const decodedBuffers = [];
 
         for (const item of activeSections) {
-          const buf = await fetchTTSAudioBuffer(item.text, audioCtx);
+          let buf = await fetchTTSAudioBuffer(item.text, audioCtx);
           if (buf) {
+            buf = trimEndSilence(buf);
             decodedBuffers.push({ item, buf });
           }
         }
@@ -1740,7 +1741,7 @@ function initAudioVideoFeatures() {
           return;
         }
 
-        const pauseDuration = 0.6; // 0.6s pause between sentences
+        const pauseDuration = 0.4; // 0.4s pleasant pause between sentences
         const sampleRate = decodedBuffers[0].buf.sampleRate;
         const numChannels = decodedBuffers[0].buf.numberOfChannels;
 
@@ -2196,7 +2197,7 @@ async function exportVideo(layoutType) {
     recorder.start();
     sourceNode.start(0);
     const startTime = audioCtx.currentTime;
-    const duration = loadedAudioBuffer.duration + 1.0; // 音声終了+1秒余裕
+    const duration = loadedAudioBuffer.duration + 0.15; // Stop video immediately (0.15s padding) after audio finishes
 
     // Main animation frame loop
     function renderLoop() {
@@ -2399,5 +2400,43 @@ function writeString(view, offset, string) {
   for (let i = 0; i < string.length; i++) {
     view.setUint8(offset + i, string.charCodeAt(i));
   }
+}
+
+/**
+ * Trim trailing silence from an AudioBuffer to prevent lingering silence at video end
+ */
+function trimEndSilence(buffer, silenceThreshold = 0.005) {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const length = buffer.length;
+  
+  let lastNonSilentSample = length - 1;
+  for (let i = length - 1; i >= 0; i--) {
+    let maxAmp = 0;
+    for (let ch = 0; ch < numChannels; ch++) {
+      const amp = Math.abs(buffer.getChannelData(ch)[i]);
+      if (amp > maxAmp) maxAmp = amp;
+    }
+    if (maxAmp > silenceThreshold) {
+      lastNonSilentSample = i;
+      break;
+    }
+  }
+  
+  // Add small 0.1s smooth decay padding
+  const paddingSamples = Math.floor(sampleRate * 0.1);
+  const trimmedLength = Math.min(length, lastNonSilentSample + 1 + paddingSamples);
+  
+  if (trimmedLength >= length) return buffer;
+  
+  const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(numChannels, trimmedLength, sampleRate);
+  const trimmedBuffer = offlineCtx.createBuffer(numChannels, trimmedLength, sampleRate);
+  
+  for (let ch = 0; ch < numChannels; ch++) {
+    const data = buffer.getChannelData(ch).subarray(0, trimmedLength);
+    trimmedBuffer.copyToChannel(data, ch, 0);
+  }
+  
+  return trimmedBuffer;
 }
 
