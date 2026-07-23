@@ -4,10 +4,8 @@
 
 const DEFAULT_TEMPLATE_ID = 'default-template';
 
-// Bounding box coordinates based on a 1200x1600 resolution.
-// Coordinates here represent the inset area (where text is actually drawn) 
-// to prevent text from overlapping borders.
-const DEFAULT_COORDS = {
+// Bounding box coordinates based on a 1200x1600 resolution for 5 sections.
+const COORDS_5_SECTIONS = {
   title: { x: 120, y: 95, w: 800, h: 140 },
   sections: [
     { x: 290, y: 360, w: 700, h: 140 },
@@ -18,14 +16,28 @@ const DEFAULT_COORDS = {
   ]
 };
 
+// Bounding box coordinates based on a 1200x1600 resolution for 4 sections.
+// Increased box height and text area for larger, highly readable typography.
+const COORDS_4_SECTIONS = {
+  title: { x: 120, y: 95, w: 800, h: 140 },
+  sections: [
+    { x: 290, y: 360, w: 700, h: 190 },
+    { x: 290, y: 640, w: 700, h: 190 },
+    { x: 290, y: 920, w: 700, h: 190 },
+    { x: 290, y: 1200, w: 700, h: 190 }
+  ]
+};
+
+const DEFAULT_COORDS = COORDS_5_SECTIONS;
+
 // Default XML template loaded on first startup
 const DEFAULT_XML_TEXT = ``;
 
 /**
  * Programmatically generates the high-res default template as a Base64 PNG.
- * This ensures the app is fully functional with no external image asset dependencies.
+ * Supports sectionCount = 4 (4選) and sectionCount = 5 (5選).
  */
-function generateDefaultTemplate() {
+function generateDefaultTemplate(sectionCount = 5) {
   const canvas = document.createElement('canvas');
   canvas.width = 1200;
   canvas.height = 1600;
@@ -60,13 +72,15 @@ function generateDefaultTemplate() {
   ctx.lineWidth = 12;
   ctx.strokeRect(80, 75, 880, 180);
 
-  // 4. Draw 5 Section Rows
+  // 4. Draw Section Rows (4 or 5)
+  const count = sectionCount === 4 ? 4 : 5;
   const boxX = 270;
   const boxW = 850;
-  const boxH = 170;
+  const boxH = count === 4 ? 220 : 170;
+  const rowSpacing = count === 4 ? 280 : 225;
   
-  for (let i = 0; i < 5; i++) {
-    const boxY = 345 + i * 225;
+  for (let i = 0; i < count; i++) {
+    const boxY = 345 + i * rowSpacing;
 
     // White Text Container Box
     ctx.fillStyle = '#FFFFFF';
@@ -77,8 +91,8 @@ function generateDefaultTemplate() {
 
     // Circle for Number
     const circleX = 100;
-    const circleY = boxY + 85;
-    const circleRadius = 34;
+    const circleY = boxY + boxH / 2;
+    const circleRadius = count === 4 ? 38 : 34;
     
     ctx.beginPath();
     ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
@@ -87,16 +101,16 @@ function generateDefaultTemplate() {
 
     // Circle Number Text
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = "bold 36px 'Segoe UI', 'Noto Sans JP', sans-serif";
+    ctx.font = count === 4 ? "bold 40px 'Segoe UI', 'Noto Sans JP', sans-serif" : "bold 36px 'Segoe UI', 'Noto Sans JP', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText((i + 1).toString(), circleX, circleY);
 
     // Checkbox Box
+    const checkW = count === 4 ? 54 : 50;
+    const checkH = count === 4 ? 52 : 47;
     const checkX = 180;
-    const checkY = boxY + 61;
-    const checkW = 50;
-    const checkH = 47;
+    const checkY = boxY + (boxH - checkH) / 2;
 
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(checkX, checkY, checkW, checkH);
@@ -106,9 +120,9 @@ function generateDefaultTemplate() {
 
     // Hand-drawn Checkmark
     ctx.beginPath();
-    ctx.moveTo(checkX + 11, checkY + 23);
-    ctx.lineTo(checkX + 21, checkY + 34);
-    ctx.lineTo(checkX + 41, checkY + 11);
+    ctx.moveTo(checkX + 11, checkY + Math.round(checkH * 0.48));
+    ctx.lineTo(checkX + Math.round(checkW * 0.42), checkY + Math.round(checkH * 0.72));
+    ctx.lineTo(checkX + Math.round(checkW * 0.82), checkY + Math.round(checkH * 0.23));
     ctx.strokeStyle = navyColor;
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
@@ -130,20 +144,21 @@ function generateDefaultTemplate() {
 
 /**
  * Standard utility to scale coordinate configs to any image's dimensions.
- * Maps DEFAULT_COORDS proportionally to targetWidth / targetHeight.
+ * Maps COORDS (4 or 5 sections) proportionally to targetWidth / targetHeight.
  */
-function getScaledCoords(targetWidth, targetHeight) {
+function getScaledCoords(targetWidth, targetHeight, sectionCount = 5) {
+  const baseCoords = sectionCount === 4 ? COORDS_4_SECTIONS : COORDS_5_SECTIONS;
   const scaleX = targetWidth / 1200;
   const scaleY = targetHeight / 1600;
 
   return {
     title: {
-      x: Math.round(DEFAULT_COORDS.title.x * scaleX),
-      y: Math.round(DEFAULT_COORDS.title.y * scaleY),
-      w: Math.round(DEFAULT_COORDS.title.w * scaleX),
-      h: Math.round(DEFAULT_COORDS.title.h * scaleY)
+      x: Math.round(baseCoords.title.x * scaleX),
+      y: Math.round(baseCoords.title.y * scaleY),
+      w: Math.round(baseCoords.title.w * scaleX),
+      h: Math.round(baseCoords.title.h * scaleY)
     },
-    sections: DEFAULT_COORDS.sections.map(sec => ({
+    sections: baseCoords.sections.map(sec => ({
       x: Math.round(sec.x * scaleX),
       y: Math.round(sec.y * scaleY),
       w: Math.round(sec.w * scaleX),

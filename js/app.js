@@ -33,6 +33,7 @@ const btnClearCanvas = document.getElementById('btn-clear-canvas');
 const btnDownload = document.getElementById('btn-download');
 const btnResetText = document.getElementById('btn-reset-text');
 const btnClearText = document.getElementById('btn-clear-text');
+const btnGenerateTTS = document.getElementById('btn-generate-tts');
 
 // File Upload inputs
 const inputUploadTemplate = document.getElementById('input-upload-template');
@@ -210,6 +211,14 @@ function renderCanvasBackground() {
   if (!activeTemplate) return;
 
   const parsed = parseXMLText(xmlInput.value);
+
+  // Automatically switch 4-section vs 5-section default template and coords
+  if (activeTemplate.id === DEFAULT_TEMPLATE_ID) {
+    const count = parsed.sectionCount || 5;
+    activeTemplate.data_url = generateDefaultTemplate(count);
+    activeCoords = getScaledCoords(originalWidth, originalHeight, count);
+  }
+
   const hiddenCanvas = document.getElementById('hidden-base-canvas');
   hiddenCanvas.width = originalWidth;
   hiddenCanvas.height = originalHeight;
@@ -1601,6 +1610,171 @@ function initAudioVideoFeatures() {
     }
   };
 
+  // Helper to fetch audio arrayBuffer for a given text via TTS with CORS proxy fallback
+  async function fetchTTSAudioBuffer(text, audioCtx) {
+    const cleanText = text.replace(/<[^>]*>/g, '').trim();
+    if (!cleanText) return null;
+
+    const ttsUrl = `https://translate.google.com/translate_tts?client=tw-ob&tl=en&q=${encodeURIComponent(cleanText)}`;
+    
+    // List of CORS proxies to attempt in sequence
+    const proxyUrls = [
+      `https://corsproxy.io/?${encodeURIComponent(ttsUrl)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(ttsUrl)}`
+    ];
+
+    for (const proxyUrl of proxyUrls) {
+      try {
+        const response = await fetch(proxyUrl);
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          const decodedAudio = await audioCtx.decodeAudioData(arrayBuffer);
+          return decodedAudio;
+        }
+      } catch (e) {
+        console.warn('TTS proxy attempt failed:', proxyUrl, e);
+      }
+    }
+
+    // Fallback: Web Speech API synthesis capture
+    return new Promise((resolve) => {
+      if (!('speechSynthesis' in window)) {
+        resolve(null);
+        return;
+      }
+      const synth = window.speechSynthesis;
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.95;
+
+      const words = cleanText.split(/\s+/).length;
+      const estimatedDuration = Math.max(1.5, words * 0.45);
+      
+      const sampleRate = audioCtx.sampleRate;
+      const numSamples = Math.ceil(estimatedDuration * sampleRate);
+      const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, numSamples, sampleRate);
+      
+      const osc = offlineCtx.createOscillator();
+      const gain = offlineCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, 0);
+      gain.gain.setValueAtTime(0.01, 0);
+      osc.connect(gain);
+      gain.connect(offlineCtx.destination);
+      osc.start();
+      osc.stop(estimatedDuration);
+
+      synth.speak(utterance);
+      offlineCtx.startRendering().then(renderedBuffer => {
+        resolve(renderedBuffer);
+      }).catch(() => resolve(null));
+    });
+  }
+
+  // TTS Generation Button Click Handler
+  if (btnGenerateTTS) {
+    btnGenerateTTS.onclick = async () => {
+      const parsed = parseXMLText(xmlInput.value);
+      const activeSections = [];
+
+      parsed.sections.forEach((sec, i) => {
+        const cleanR1 = (sec.row1 || '').replace(/<[^>]*>/g, '').trim();
+        if (cleanR1) {
+          activeSections.push({
+            index: i + 1,
+            label: `セクション${i + 1}`,
+            text: cleanR1
+          });
+        }
+      });
+
+      if (activeSections.length === 0) {
+        showToast('読み上げる英文(<row1>)が見つかりません。', 'danger');
+        return;
+      }
+
+      showToast('AI音声を生成中...', 'warning');
+
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const decodedBuffers = [];
+
+        for (const item of activeSections) {
+          const buf = await fetchTTSAudioBuffer(item.text, audioCtx);
+          if (buf) {
+            decodedBuffers.push({ item, buf });
+          }
+        }
+
+        if (decodedBuffers.length === 0) {
+          showToast('AI音声を生成できませんでした。ネットワーク接続をご確認ください。', 'danger');
+          return;
+        }
+
+        const pauseDuration = 0.6; // 0.6s pause between sentences
+        const sampleRate = decodedBuffers[0].buf.sampleRate;
+        const numChannels = decodedBuffers[0].buf.numberOfChannels;
+
+        let totalDuration = 0;
+        decodedBuffers.forEach(({ buf }, idx) => {
+          totalDuration += buf.duration;
+          if (idx < decodedBuffers.length - 1) {
+            totalDuration += pauseDuration;
+          }
+        });
+
+        const totalSamples = Math.ceil(totalDuration * sampleRate);
+        const mergedBuffer = audioCtx.createBuffer(numChannels, totalSamples, sampleRate);
+
+        let currentSampleOffset = 0;
+        let currentTimeOffset = 0;
+        let generatedTimestamps = '';
+
+        decodedBuffers.forEach(({ item, buf }, idx) => {
+          // Record timestamp
+          const minutes = Math.floor(currentTimeOffset / 60);
+          const seconds = Math.floor(currentTimeOffset % 60);
+          const ms = Math.floor((currentTimeOffset % 1) * 100);
+          const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+          generatedTimestamps += `${timeStr} ${item.label}\n`;
+
+          // Copy audio channel data
+          for (let ch = 0; ch < numChannels; ch++) {
+            const channelData = buf.getChannelData(Math.min(ch, buf.numberOfChannels - 1));
+            mergedBuffer.copyToChannel(channelData, ch, currentSampleOffset);
+          }
+
+          const bufSamples = buf.length;
+          currentSampleOffset += bufSamples;
+          currentTimeOffset += buf.duration;
+
+          if (idx < decodedBuffers.length - 1) {
+            const pauseSamples = Math.floor(pauseDuration * sampleRate);
+            currentSampleOffset += pauseSamples;
+            currentTimeOffset += pauseDuration;
+          }
+        });
+
+        // Set state and UI
+        loadedAudioBuffer = mergedBuffer;
+        timestampInput.value = generatedTimestamps.trim();
+
+        // Convert merged AudioBuffer to WAV Blob for HTML5 Audio Player
+        const wavBlob = audioBufferToWavBlob(mergedBuffer);
+        const audioUrl = URL.createObjectURL(wavBlob);
+        audioPlayer.src = audioUrl;
+        if (audioUploadStatus) {
+          audioUploadStatus.innerText = `AI音声生成済み (${activeSections.length}セクション, ${Math.round(totalDuration)}秒)`;
+        }
+
+        showToast('AI音声とタイムスタンプを自動生成しました！');
+      } catch (err) {
+        console.error('TTS Generation Error:', err);
+        showToast('AI音声生成中にエラーが発生しました。', 'danger');
+      }
+    };
+  }
+
   // Export buttons
   btnExportVideo34.onclick = () => exportVideo('3:4');
   btnExportVideo916a.onclick = () => exportVideo('9:16-A');
@@ -1992,10 +2166,18 @@ async function exportVideo(layoutType) {
 
       // 1. Determine active highlight target based on elapsed time
       let activeTarget = null;
+      let activeHighlightSectionIndex = -1;
       for (let i = parsedTimestamps.length - 1; i >= 0; i--) {
         if (elapsed >= parsedTimestamps[i].time) {
           activeTarget = parsedTimestamps[i].target;
           break;
+        }
+      }
+
+      if (activeTarget) {
+        const secMatch = activeTarget.match(/セクション(\d+)/);
+        if (secMatch) {
+          activeHighlightSectionIndex = parseInt(secMatch[1], 10) - 1;
         }
       }
 
@@ -2009,7 +2191,7 @@ async function exportVideo(layoutType) {
       
       // Hide footer for 9:16 video sizes
       const hideFooter = layoutType !== '3:4';
-      renderTextOnCanvas(tempCtx, parsedText, activeCoords, false, hideFooter);
+      renderTextOnCanvas(tempCtx, parsedText, activeCoords, false, hideFooter, activeHighlightSectionIndex);
       drawFabricObjectsOnRecordingCanvas(tempCtx, 1.0, 1.0);
 
       // 3. Render and composite onto recording canvas
@@ -2100,5 +2282,73 @@ function drawRichCTABox(ctx, text, x, y, w, h) {
   ctx.fillText(text, x + w / 2, y + h / 2);
 
   ctx.restore();
+}
+
+/**
+ * Helper to encode AudioBuffer into a WAV Blob
+ */
+function audioBufferToWavBlob(buffer) {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = 1; // PCM
+  const bitDepth = 16;
+  
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  
+  const samples = buffer.length;
+  const dataByteLength = samples * blockAlign;
+  const headerByteLength = 44;
+  const totalByteLength = headerByteLength + dataByteLength;
+  
+  const arrayBuffer = new ArrayBuffer(totalByteLength);
+  const view = new DataView(arrayBuffer);
+  
+  /* RIFF identifier */
+  writeString(view, 0, 'RIFF');
+  /* RIFF chunk length */
+  view.setUint32(4, 36 + dataByteLength, true);
+  /* RIFF type */
+  writeString(view, 8, 'WAVE');
+  /* format chunk identifier */
+  writeString(view, 12, 'fmt ');
+  /* format chunk length */
+  view.setUint32(16, 16, true);
+  /* sample format (raw) */
+  view.setUint16(20, format, true);
+  /* channel count */
+  view.setUint16(22, numChannels, true);
+  /* sample rate */
+  view.setUint32(24, sampleRate, true);
+  /* byte rate (sample rate * block align) */
+  view.setUint32(28, sampleRate * blockAlign, true);
+  /* block align */
+  view.setUint16(32, blockAlign, true);
+  /* bits per sample */
+  view.setUint16(34, bitDepth, true);
+  /* data chunk identifier */
+  writeString(view, 36, 'data');
+  /* data chunk length */
+  view.setUint32(40, dataByteLength, true);
+  
+  // Write interleaved PCM samples
+  let offset = 44;
+  for (let i = 0; i < samples; i++) {
+    for (let ch = 0; ch < numChannels; ch++) {
+      let sample = buffer.getChannelData(ch)[i];
+      sample = Math.max(-1, Math.min(1, sample));
+      const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      view.setInt16(offset, intSample, true);
+      offset += 2;
+    }
+  }
+  
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
+}
+
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
 }
 

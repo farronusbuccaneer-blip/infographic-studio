@@ -1180,4 +1180,19 @@ textarea#xml-input:focus {
   opacity: 0.6;
 }
 
+/* AI TTS Button Hover Styling */
+#btn-generate-tts {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#btn-generate-tts:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.45) !important;
+}
+
+#btn-generate-tts:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25) !important;
+}
+
 

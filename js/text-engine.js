@@ -10,7 +10,8 @@
 function parseXMLText(text) {
   const result = {
     title: '',
-    sections: Array.from({ length: 5 }, () => ({ row1: '', row2: '', row3: '' }))
+    sections: Array.from({ length: 5 }, () => ({ row1: '', row2: '', row3: '' })),
+    sectionCount: 5
   };
 
   if (!text) return result;
@@ -35,6 +36,16 @@ function parseXMLText(text) {
       result.sections[i - 1].row2 = r2Match ? r2Match[1].trim() : '';
       result.sections[i - 1].row3 = r3Match ? r3Match[1].trim() : '';
     }
+  }
+
+  // Determine active section count (4 or 5)
+  const sec5 = result.sections[4];
+  const sec5HasContent = sec5 && (sec5.row1 || sec5.row2 || sec5.row3);
+  const sec5TagPresent = /<section5>/i.test(text);
+  if (!sec5HasContent && !sec5TagPresent) {
+    result.sectionCount = 4;
+  } else {
+    result.sectionCount = 5;
   }
 
   return result;
@@ -183,7 +194,7 @@ function wrapStyledText(ctx, tokensArray, maxWidth) {
  * Performs dynamic fit-to-box rendering on the target canvas context.
  * Adjusts font sizes iteratively to ensure all text fits inside their boxes.
  */
-function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false, hideFooter = false) {
+function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false, hideFooter = false, activeHighlightSectionIndex = -1) {
   const fontFam = "'Segoe UI', 'Noto Sans JP', sans-serif";
   ctx.textBaseline = 'top';
 
@@ -191,6 +202,7 @@ function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false, hide
   const mainCharcoal = '#333333';
   const secondaryCharcoal = '#555555';
   const emphasisRed = '#E63946';
+  const activeOrange = '#FF5500'; // Vivid Orange for active row1 timing in video
 
   // Get canvas width and height for relative footer offsets
   const originalWidth = ctx.canvas.width;
@@ -251,8 +263,9 @@ function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false, hide
     });
   }
 
-  // 2. Render Sections 1 to 5
-  for (let i = 0; i < 5; i++) {
+  // 2. Render Sections (4 or 5)
+  const maxSections = (coords && coords.sections) ? coords.sections.length : 5;
+  for (let i = 0; i < maxSections; i++) {
     const sec = parsedText.sections[i];
     const box = coords.sections[i];
     if (!sec || !box) continue;
@@ -341,10 +354,13 @@ function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false, hide
     // Draw Row 1 (Header Row)
     if (r1Lines.length > 0) {
       ctx.font = `bold ${s1}px ${fontFam}`;
+      const isCurrentActive = (activeHighlightSectionIndex === i);
+      const r1DefaultColor = isCurrentActive ? activeOrange : mainCharcoal;
+
       r1Lines.forEach(line => {
         let currentX = box.x;
         line.forEach(token => {
-          ctx.fillStyle = token.isRed ? emphasisRed : mainCharcoal;
+          ctx.fillStyle = token.isRed ? emphasisRed : r1DefaultColor;
           ctx.fillText(token.char, currentX, currentY);
           currentX += ctx.measureText(token.char).width;
         });
