@@ -355,12 +355,15 @@ function renderTextOnCanvas(ctx, parsedText, coords, hasTitleImage = false, hide
     if (r1Lines.length > 0) {
       ctx.font = `bold ${s1}px ${fontFam}`;
       const isCurrentActive = (activeHighlightSectionIndex === i);
-      const r1DefaultColor = isCurrentActive ? activeOrange : mainCharcoal;
 
       r1Lines.forEach(line => {
         let currentX = box.x;
         line.forEach(token => {
-          ctx.fillStyle = token.isRed ? emphasisRed : r1DefaultColor;
+          if (isCurrentActive) {
+            ctx.fillStyle = activeOrange; // Force vivid orange for active row1
+          } else {
+            ctx.fillStyle = token.isRed ? emphasisRed : mainCharcoal;
+          }
           ctx.fillText(token.char, currentX, currentY);
           currentX += ctx.measureText(token.char).width;
         });

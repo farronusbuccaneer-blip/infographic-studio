@@ -2225,9 +2225,13 @@ async function exportVideo(layoutType) {
       }
 
       if (activeTarget) {
-        const secMatch = activeTarget.match(/(?:section|セクション)(\d+)/i);
-        if (secMatch) {
-          activeHighlightSectionIndex = parseInt(secMatch[1], 10) - 1;
+        if (activeTarget === 'title' || activeTarget.includes('タイトル')) {
+          activeHighlightSectionIndex = -1;
+        } else {
+          const secMatch = activeTarget.match(/\d+/);
+          if (secMatch) {
+            activeHighlightSectionIndex = parseInt(secMatch[0], 10) - 1;
+          }
         }
       }
 
@@ -2241,7 +2245,8 @@ async function exportVideo(layoutType) {
       
       // Hide footer for 9:16 video sizes
       const hideFooter = layoutType !== '3:4';
-      renderTextOnCanvas(tempCtx, parsedText, activeCoords, false, hideFooter, activeHighlightSectionIndex);
+      const videoCoords = getScaledCoords(1200, 1600, parsedText.sectionCount);
+      renderTextOnCanvas(tempCtx, parsedText, videoCoords, false, hideFooter, activeHighlightSectionIndex);
       drawFabricObjectsOnRecordingCanvas(tempCtx, 1.0, 1.0);
 
       // 3. Render and composite onto recording canvas
