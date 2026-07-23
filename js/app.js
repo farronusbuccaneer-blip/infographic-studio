@@ -1780,10 +1780,26 @@ function initAudioVideoFeatures() {
         // Convert merged AudioBuffer to WAV Blob for HTML5 Audio Player
         const wavBlob = audioBufferToWavBlob(mergedBuffer);
         const audioUrl = URL.createObjectURL(wavBlob);
-        audioPlayer.src = audioUrl;
-        if (audioUploadStatus) {
-          audioUploadStatus.innerText = `AI音声生成済み (${activeSections.length}セクション, ${Math.round(totalDuration)}秒)`;
+        
+        const previewEl = document.getElementById('preview-audio-el');
+        const statusWrapper = document.getElementById('audio-upload-status');
+        const filenameEl = document.getElementById('audio-filename');
+
+        if (previewEl) {
+          previewEl.src = audioUrl;
         }
+        if (filenameEl) {
+          filenameEl.innerText = `AI生成音声 (${activeSections.length}セクション, ${Math.round(totalDuration)}秒)`;
+        }
+        if (statusWrapper) {
+          statusWrapper.style.display = 'block';
+        }
+
+        // Enable video export buttons & silence detection
+        btnExportVideo34.disabled = false;
+        btnExportVideo916a.disabled = false;
+        btnExportVideo916b.disabled = false;
+        btnDetectSilence.disabled = false;
 
         showToast('AI音声とタイムスタンプを自動生成しました！');
       } catch (err) {
