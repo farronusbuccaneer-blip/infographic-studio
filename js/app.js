@@ -1700,6 +1700,25 @@ function initAudioVideoFeatures() {
     });
   }
 
+  // Bind Speed buttons click event
+  const ttsSpeedBtns = document.querySelectorAll('.btn-tts-speed');
+  ttsSpeedBtns.forEach(btn => {
+    btn.onclick = () => {
+      ttsSpeedBtns.forEach(b => {
+        b.classList.remove('active');
+        b.style.background = 'var(--bg-secondary)';
+        b.style.color = 'var(--text-primary)';
+        b.style.borderColor = 'var(--border-color)';
+        b.style.fontWeight = 'normal';
+      });
+      btn.classList.add('active');
+      btn.style.background = '#6366F1';
+      btn.style.color = 'white';
+      btn.style.borderColor = '#6366F1';
+      btn.style.fontWeight = '600';
+    };
+  });
+
   // TTS Generation Button Click Handler
   if (btnGenerateTTS) {
     btnGenerateTTS.onclick = async () => {
@@ -1724,6 +1743,10 @@ function initAudioVideoFeatures() {
 
       showToast('AI音声を生成中...', 'warning');
 
+      // Get selected TTS Speed (Default 1.3x Rapid Fire)
+      const activeSpeedBtn = document.querySelector('.btn-tts-speed.active');
+      const ttsSpeed = activeSpeedBtn ? (parseFloat(activeSpeedBtn.dataset.speed) || 1.3) : 1.3;
+
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const decodedBuffers = [];
@@ -1732,6 +1755,9 @@ function initAudioVideoFeatures() {
           let buf = await fetchTTSAudioBuffer(item.text, audioCtx);
           if (buf) {
             buf = trimEndSilence(buf);
+            if (ttsSpeed !== 1.0) {
+              buf = await changeAudioBufferSpeed(buf, ttsSpeed, audioCtx);
+            }
             decodedBuffers.push({ item, buf });
           }
         }
@@ -2443,5 +2469,25 @@ function trimEndSilence(buffer, silenceThreshold = 0.005) {
   }
   
   return trimmedBuffer;
+}
+
+/**
+ * Change AudioBuffer speed / playback rate without pitch distortion
+ */
+async function changeAudioBufferSpeed(buffer, speed, audioCtx) {
+  if (!buffer || speed === 1.0) return buffer;
+
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const newLength = Math.floor(buffer.length / speed);
+
+  const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(numChannels, newLength, sampleRate);
+  const source = offlineCtx.createBufferSource();
+  source.buffer = buffer;
+  source.playbackRate.value = speed;
+  source.connect(offlineCtx.destination);
+  source.start(0);
+
+  return await offlineCtx.startRendering();
 }
 
